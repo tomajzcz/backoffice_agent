@@ -29,7 +29,7 @@ export function ResultsPanel({ messages, latestToolResult, onAction, isLoading }
     const { toolName } = latestToolResult
     if (toolName === "generateReport" || toolName === "generatePresentation") {
       setActiveTab("zprava")
-    } else if (toolName === "createGmailDraft") {
+    } else if (toolName === "createGmailDraft" || toolName === "sendPresentationEmail") {
       setActiveTab("email")
     } else if (
       toolName === "createAgentTask" ||
@@ -103,6 +103,8 @@ export function ResultsPanel({ messages, latestToolResult, onAction, isLoading }
                 ? `${latestToolResult.property.address} · ${latestToolResult.property.district}`
                 : latestToolResult.toolName === "createGmailDraft"
                 ? `Draft: ${latestToolResult.subject}`
+                : latestToolResult.toolName === "sendPresentationEmail"
+                ? `Email s prezentací odeslán na ${latestToolResult.to}`
                 : latestToolResult.toolName === "listScheduledJobs"
                 ? `${latestToolResult.totalJobs} monitorovacích jobů`
                 : latestToolResult.toolName === "triggerMonitoringJob"

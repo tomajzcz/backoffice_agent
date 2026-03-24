@@ -12,6 +12,7 @@ import { deleteCalendarEventTool } from "./deleteCalendarEvent"
 import { listCalendarEventsTool } from "./listCalendarEvents"
 import { getPropertyDetailsTool } from "./getPropertyDetails"
 import { createGmailDraftTool } from "./createGmailDraft"
+import { sendPresentationEmailTool } from "./sendPresentationEmail"
 import { listScheduledJobsTool } from "./listScheduledJobs"
 import { triggerMonitoringJobTool } from "./triggerMonitoringJob"
 import { getMonitoringResultsTool } from "./getMonitoringResults"
@@ -48,6 +49,7 @@ export const agentTools = {
   listCalendarEvents: listCalendarEventsTool,
   getPropertyDetails: getPropertyDetailsTool,
   createGmailDraft: createGmailDraftTool,
+  sendPresentationEmail: sendPresentationEmailTool,
   listScheduledJobs: listScheduledJobsTool,
   triggerMonitoringJob: triggerMonitoringJobTool,
   getMonitoringResults: getMonitoringResultsTool,

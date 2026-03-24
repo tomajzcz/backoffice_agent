@@ -1,6 +1,7 @@
 import { tool } from "ai"
 import { z } from "zod"
 import { buildPptxBuffer, type SlideData } from "@/lib/export/pptx"
+import { storePptx } from "@/lib/export/pptx-store"
 import { formatCZK } from "@/lib/utils"
 import type {
   GeneratePresentationResult,
@@ -30,6 +31,7 @@ export const generatePresentationTool = tool({
     renovationData: z.record(z.unknown()).optional().describe("Data z scanMissingRenovationData (volitelné)"),
   }),
   execute: async ({ title, slideCount = 3, kpiData, timelineData, renovationData }): Promise<GeneratePresentationResult> => {
+   try {
     const kpi = kpiData as unknown as QueryWeeklyKPIsResult
     const timeline = timelineData as unknown as QueryLeadsSalesTimelineResult
     const reno = renovationData as unknown as ScanMissingRenovationResult | undefined
@@ -245,12 +247,12 @@ export const generatePresentationTool = tool({
 
     try {
       const buffer = await buildPptxBuffer(slides)
-      const base64 = buffer.toString("base64")
-      const dataUrl = `data:application/vnd.openxmlformats-officedocument.presentationml.presentation;base64,${base64}`
+      const token = storePptx(buffer)
+      const downloadUrl = `/api/export/pptx?token=${token}&filename=${encodeURIComponent(title)}`
 
       return {
         toolName: "generatePresentation",
-        downloadUrl: dataUrl,
+        downloadUrl,
         slideCount: slides.length,
         title,
         chartType: "none",
@@ -266,5 +268,15 @@ export const generatePresentationTool = tool({
       title,
       chartType: "none",
     }
+   } catch (err) {
+    console.error("[generatePresentation] error:", err)
+    return {
+      toolName: "generatePresentation",
+      downloadUrl: "",
+      slideCount: 0,
+      title,
+      chartType: "none",
+    }
+   }
   },
 })

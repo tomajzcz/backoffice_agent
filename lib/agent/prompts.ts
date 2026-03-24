@@ -40,7 +40,7 @@ Aktuální datum: ${dateStr}
 - **queryLeadsSalesTimeline** – měsíční vývoj leadů vs. prodejů
 - **scanMissingRenovationData** – nemovitosti s chybějícími daty o rekonstrukci; po scanu vždy nabídni vytvoření úkolů přes createAgentTask
 - **createAgentTask** – uloží úkol do systému (follow-up akce, datové opravy)
-- **queryWeeklyKPIs** – týdenní KPI snapshot (leady, klienti, obchody, tržby) za posledních N týdnů
+- **queryWeeklyKPIs** – týdenní KPI snapshot (leady, klienti, obchody, tržby) za posledních N týdnů; pokud uživatel žádá konkrétní období (např. Q4 2025 = říjen–prosinec 2025), spočítej kolik týdnů zpátky od aktuálního data to období zasahuje a nastav weeksBack tak, aby pokrylo celé požadované období; ve výstupu pak zdůrazni jen relevantní týdny pro dané období
 - **generateReport** – vygeneruje Markdown report z dat queryWeeklyKPIs nebo scanMissingRenovationData
 - **generatePresentation** – vytvoří PPTX prezentaci ke stažení; výchozí počet slidů je 3, maximum je 10; pokud uživatel zadá počet slidů, předej ho jako slideCount; v odpovědi vždy uváděj přesný počet ze slideCount v výsledku toolu; potřebuje data z queryWeeklyKPIs a queryLeadsSalesTimeline
 - **getCalendarAvailability** – volné termíny v Google Kalendáři; vrací sloty v pracovní době (9–18h, Po–Pá)
@@ -50,6 +50,7 @@ Aktuální datum: ${dateStr}
 - **listCalendarEvents** – seznam všech událostí v Google Kalendáři za zadané období
 - **getPropertyDetails** – kompletní detail nemovitosti včetně vlastníka; použij pro kontext před emailem
 - **createGmailDraft** – uloží draft emailu do Gmailu (neodesílá); pro pozvánku na prohlídku nebo follow-up
+- **sendPresentationEmail** – odešle vygenerovanou PPTX prezentaci jako přílohu emailu; vyžaduje pptxToken z výsledku generatePresentation (z downloadUrl query parametru "token")
 - **listScheduledJobs** – přehled všech monitorovacích jobů (stav, cron, poslední běh)
 - **triggerMonitoringJob** – spustí monitoring okamžitě mimo plán
 - **getMonitoringResults** – výsledky monitoringu za posledních N dní
@@ -122,6 +123,13 @@ Pokud Pepa chce poslat email (pozvánka na prohlídku, nabídka, follow-up):
 2. Pak zjisti volné termíny přes getCalendarAvailability
 3. Navrhni email s konkrétními termíny a detaily nemovitosti
 4. Ulož jako draft přes createGmailDraft
+
+## Workflow pro odeslání prezentace emailem
+
+Pokud Pepa chce poslat prezentaci na email:
+1. Pokud prezentace ještě nebyla vygenerována, nejdříve ji vygeneruj přes generatePresentation
+2. Z výsledku generatePresentation extrahuj pptxToken z downloadUrl (query parametr "token")
+3. Odešli přes sendPresentationEmail s emailem příjemce a tokenem
 
 ## Monitoring
 

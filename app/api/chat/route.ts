@@ -7,17 +7,103 @@ import { logAgentRun } from "@/lib/agent/run-logger"
 import type { ToolCallLog } from "@/types/agent"
 
 // Critical: without this, Vercel cuts streaming at 10s
-export const maxDuration = 60
+export const maxDuration = 120
+
+/**
+ * Strip large payloads (base64 data URLs, long markdown) from previous tool results
+ * to prevent conversation history from bloating on subsequent messages.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function trimMessageHistory(messages: any[]): any[] {
+  return messages.map((msg) => {
+    if (msg.role !== "assistant") return msg
+
+    // Handle toolInvocations array (AI SDK v4 format)
+    if (Array.isArray(msg.toolInvocations)) {
+      return {
+        ...msg,
+        toolInvocations: msg.toolInvocations.map((inv: Record<string, unknown>) => {
+          if (inv.state !== "result" || !inv.result) {
+            // Patch incomplete invocations so the AI SDK doesn't throw
+            // AI_MessageConversionError on the next request
+            return {
+              ...inv,
+              state: "result",
+              result: {
+                toolName: inv.toolName ?? "unknown",
+                error: "Tool call did not complete. Please retry.",
+                chartType: "none",
+              },
+            }
+          }
+          const result = inv.result as Record<string, unknown>
+          const trimmed = { ...result }
+          // Strip base64 data URLs (PPTX, images, etc.)
+          if (typeof trimmed.downloadUrl === "string" && (trimmed.downloadUrl as string).startsWith("data:")) {
+            trimmed.downloadUrl = "[file already delivered to client]"
+          }
+          // Truncate large markdown (reports)
+          if (typeof trimmed.markdown === "string" && (trimmed.markdown as string).length > 500) {
+            trimmed.markdown = (trimmed.markdown as string).slice(0, 500) + "\n...[truncated for context window]"
+          }
+          // Truncate large HTML bodies (email drafts)
+          if (typeof trimmed.bodyHtml === "string" && (trimmed.bodyHtml as string).length > 500) {
+            trimmed.bodyHtml = (trimmed.bodyHtml as string).slice(0, 500) + "...[truncated]"
+          }
+          return { ...inv, result: trimmed }
+        }),
+      }
+    }
+
+    // Handle content array format (tool-result parts)
+    if (Array.isArray(msg.content)) {
+      return {
+        ...msg,
+        content: msg.content.map((part: Record<string, unknown>) => {
+          if (part.type !== "tool-result" || !part.result) {
+            if (part.type === "tool-result") {
+              return {
+                ...part,
+                result: {
+                  toolName: "unknown",
+                  error: "Tool call did not complete. Please retry.",
+                  chartType: "none",
+                },
+              }
+            }
+            return part
+          }
+          const result = part.result as Record<string, unknown>
+          const trimmed = { ...result }
+          if (typeof trimmed.downloadUrl === "string" && (trimmed.downloadUrl as string).startsWith("data:")) {
+            trimmed.downloadUrl = "[file already delivered to client]"
+          }
+          if (typeof trimmed.markdown === "string" && (trimmed.markdown as string).length > 500) {
+            trimmed.markdown = (trimmed.markdown as string).slice(0, 500) + "\n...[truncated for context window]"
+          }
+          if (typeof trimmed.bodyHtml === "string" && (trimmed.bodyHtml as string).length > 500) {
+            trimmed.bodyHtml = (trimmed.bodyHtml as string).slice(0, 500) + "...[truncated]"
+          }
+          return { ...part, result: trimmed }
+        }),
+      }
+    }
+
+    return msg
+  })
+}
 
 export async function POST(req: NextRequest) {
   const { messages, sessionId } = await req.json()
+
+  const trimmedMessages = trimMessageHistory(messages)
 
   const toolCallLog: ToolCallLog[] = []
 
   const result = streamText({
     model: anthropic("claude-sonnet-4-6"),
     system: getSystemPrompt(),
-    messages,
+    messages: trimmedMessages,
     tools: agentTools,
     // Critical: without maxSteps, LLM issues tool calls but never responds with text
     maxSteps: 10,

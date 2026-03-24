@@ -13,11 +13,12 @@ interface Props {
   messages: Message[]
   input: string
   isLoading: boolean
+  error?: Error
   onInputChange: (value: string) => void
   onSubmit: (e: FormEvent) => void
 }
 
-export function ChatPanel({ messages, input, isLoading, onInputChange, onSubmit }: Props) {
+export function ChatPanel({ messages, input, isLoading, error, onInputChange, onSubmit }: Props) {
   const isEmpty = messages.filter((m) => (m.role as string) !== "tool").length === 0
 
   function handlePromptSelect(prompt: string) {
@@ -77,6 +78,13 @@ export function ChatPanel({ messages, input, isLoading, onInputChange, onSubmit 
 
       {/* Message list */}
       <MessageList messages={messages} isLoading={isLoading} />
+
+      {/* Error display */}
+      {error && (
+        <div className="mx-3 mb-2 px-3 py-2 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-xs">
+          <span className="font-medium">Chyba:</span> {error.message}
+        </div>
+      )}
 
       {/* Suggested prompts */}
       <Separator className="opacity-30" />

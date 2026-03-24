@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { buildPptxBuffer } from "@/lib/export/pptx"
 import type { SlideData } from "@/lib/export/pptx"
-
-// In-memory token store for generated presentations
-// Each token is valid for 10 minutes
-const pptxStore = new Map<string, { buffer: Buffer; expiresAt: number }>()
+import { storePptx, getPptx } from "@/lib/export/pptx-store"
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,10 +14,7 @@ export async function POST(req: NextRequest) {
     }
 
     const buffer = await buildPptxBuffer(slides)
-
-    // Store with token for GET download
-    const token = crypto.randomUUID()
-    pptxStore.set(token, { buffer, expiresAt: Date.now() + 10 * 60 * 1000 })
+    const token = storePptx(buffer)
 
     return NextResponse.json({ token, filename })
   } catch (err) {
@@ -37,17 +31,16 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Missing token" }, { status: 400 })
   }
 
-  const entry = pptxStore.get(token)
-  if (!entry || entry.expiresAt < Date.now()) {
-    pptxStore.delete(token)
+  const buffer = getPptx(token)
+  if (!buffer) {
     return NextResponse.json({ error: "Token expired or not found" }, { status: 404 })
   }
 
-  return new NextResponse(new Uint8Array(entry.buffer), {
+  return new NextResponse(new Uint8Array(buffer), {
     headers: {
       "Content-Type":
         "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-      "Content-Disposition": `attachment; filename="${filename}.pptx"`,
+      "Content-Disposition": `attachment; filename="prezentace.pptx"; filename*=UTF-8''${encodeURIComponent(filename)}.pptx`,
     },
   })
 }

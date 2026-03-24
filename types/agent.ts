@@ -235,6 +235,16 @@ export interface CreateGmailDraftResult {
   chartType: "none"
 }
 
+export interface SendPresentationEmailResult {
+  toolName: "sendPresentationEmail"
+  messageId: string
+  to: string
+  subject: string
+  title: string
+  sentAt: string
+  chartType: "none"
+}
+
 export interface ListScheduledJobsResult {
   toolName: "listScheduledJobs"
   totalJobs: number
@@ -549,6 +559,7 @@ export type AgentToolResult =
   | ListCalendarEventsResult
   | GetPropertyDetailsResult
   | CreateGmailDraftResult
+  | SendPresentationEmailResult
   | ListScheduledJobsResult
   | TriggerMonitoringJobResult
   | GetMonitoringResultsResult

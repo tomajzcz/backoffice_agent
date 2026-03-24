@@ -10,7 +10,10 @@ function trendArrow(change: number): string {
 }
 
 function buildWeeklySummary(data: QueryWeeklyKPIsResult): string {
-  const { totals, trends, weeks, weeksBack } = data
+  const weeks = Array.isArray(data.weeks) ? data.weeks : []
+  const totals = data.totals ?? { totalLeads: 0, totalClients: 0, totalDeals: 0, totalRevenue: 0 }
+  const trends = data.trends ?? { leadsChange: 0, clientsChange: 0, revenueChange: 0, dealsChange: 0 }
+  const weeksBack = data.weeksBack ?? weeks.length
   const firstWeek = weeks[0]?.weekLabel ?? ""
   const lastWeek = weeks[weeks.length - 1]?.weekLabel ?? ""
 
@@ -56,7 +59,9 @@ function buildWeeklySummary(data: QueryWeeklyKPIsResult): string {
 }
 
 function buildRenovationScan(data: ScanMissingRenovationResult): string {
-  const { totalCount, byDistrict, properties } = data
+  const totalCount = data.totalCount ?? 0
+  const byDistrict = Array.isArray(data.byDistrict) ? data.byDistrict : []
+  const properties = Array.isArray(data.properties) ? data.properties : []
 
   const lines = [
     `# Scan: Nemovitosti s chybějícími daty o rekonstrukci`,
@@ -107,6 +112,7 @@ export const generateReportTool = tool({
       .describe("Data z příslušného toolu (queryWeeklyKPIs nebo scanMissingRenovationData)"),
   }),
   execute: async ({ reportType, data }): Promise<GenerateReportResult> => {
+   try {
     let markdown = ""
     let title = ""
 
@@ -128,5 +134,16 @@ export const generateReportTool = tool({
       generatedAt: new Date().toISOString(),
       chartType: "none",
     }
+   } catch (err) {
+    console.error("[generateReport] error:", err)
+    return {
+      toolName: "generateReport",
+      reportType,
+      title: "Chyba při generování reportu",
+      markdown: `Nepodařilo se vygenerovat report: ${err instanceof Error ? err.message : "neznámá chyba"}`,
+      generatedAt: new Date().toISOString(),
+      chartType: "none",
+    }
+   }
   },
 })

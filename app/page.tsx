@@ -15,6 +15,7 @@ export default function Home() {
   const { messages, input, isLoading, setInput, handleSubmit, handleInputChange, append, error } = useChat({
     api: "/api/chat",
     body: { sessionId: sessionId.current },
+    maxSteps: 10,
     onError: (err) => console.error("[useChat] error:", err),
   })
 

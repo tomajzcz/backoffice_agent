@@ -1,0 +1,258 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Client {
+  id                Int               @id @default(autoincrement())
+  name              String
+  email             String            @unique
+  phone             String?
+  acquisitionSource AcquisitionSource
+  segment           ClientSegment
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  deals             Deal[]
+  properties        Property[]        @relation("PropertyOwner")
+  showings          Showing[]
+
+  @@index([createdAt])
+  @@index([acquisitionSource])
+  @@map("clients")
+}
+
+model Lead {
+  id               Int               @id @default(autoincrement())
+  name             String
+  email            String
+  phone            String?
+  source           AcquisitionSource
+  status           LeadStatus        @default(NEW)
+  propertyInterest String?
+  createdAt        DateTime          @default(now())
+  convertedAt      DateTime?
+
+  @@index([createdAt])
+  @@index([source])
+  @@index([status])
+  @@index([convertedAt])
+  @@map("leads")
+}
+
+model Property {
+  id                 Int            @id @default(autoincrement())
+  address            String
+  district           String
+  type               PropertyType
+  price              Decimal        @db.Decimal(12, 2)
+  status             PropertyStatus @default(AVAILABLE)
+  areaM2             Decimal        @db.Decimal(8, 2)
+  disposition        String?
+  yearBuilt          Int?
+  lastRenovationYear Int?
+  renovationNotes    String?
+  ownerId            Int?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  deals              Deal[]
+  owner              Client?        @relation("PropertyOwner", fields: [ownerId], references: [id])
+  showings           Showing[]
+
+  @@index([district])
+  @@index([status])
+  @@index([createdAt])
+  @@index([lastRenovationYear])
+  @@map("properties")
+}
+
+model Deal {
+  id         Int        @id @default(autoincrement())
+  propertyId Int
+  clientId   Int
+  status     DealStatus @default(IN_PROGRESS)
+  value      Decimal    @db.Decimal(12, 2)
+  closedAt   DateTime?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  client     Client     @relation(fields: [clientId], references: [id])
+  property   Property   @relation(fields: [propertyId], references: [id])
+
+  @@index([status])
+  @@index([closedAt])
+  @@index([createdAt])
+  @@map("deals")
+}
+
+model Showing {
+  id          Int           @id @default(autoincrement())
+  propertyId  Int
+  clientId    Int
+  scheduledAt DateTime
+  status      ShowingStatus @default(SCHEDULED)
+  notes                 String?
+  googleCalendarEventId String?       @map("google_calendar_event_id")
+  createdAt             DateTime      @default(now())
+  client                Client        @relation(fields: [clientId], references: [id])
+  property              Property      @relation(fields: [propertyId], references: [id])
+
+  @@index([scheduledAt])
+  @@index([status])
+  @@map("showings")
+}
+
+model WeeklyReport {
+  id               Int      @id @default(autoincrement())
+  weekStart        DateTime @unique @db.Date
+  newLeads         Int
+  newClients       Int
+  propertiesListed Int
+  dealsClosed      Int
+  revenue          Decimal  @db.Decimal(14, 2)
+  createdAt        DateTime @default(now())
+
+  @@index([weekStart])
+  @@map("weekly_reports")
+}
+
+model AgentTask {
+  id          Int          @id @default(autoincrement())
+  title       String
+  description String?
+  status      TaskStatus   @default(OPEN)
+  priority    TaskPriority @default(MEDIUM)
+  dueDate     DateTime?
+  sourceQuery String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([status])
+  @@index([priority])
+  @@index([createdAt])
+  @@map("agent_tasks")
+}
+
+model ScheduledJob {
+  id          Int                @id @default(autoincrement())
+  name        String
+  description String?
+  cronExpr    String
+  lastRunAt   DateTime?
+  nextRunAt   DateTime?
+  status      JobStatus          @default(ACTIVE)
+  configJson  Json
+  notifyEmail String?            @map("notify_email")
+  createdAt   DateTime           @default(now())
+  results     MonitoringResult[]
+
+  @@map("scheduled_jobs")
+}
+
+model MonitoringResult {
+  id          Int          @id @default(autoincrement())
+  jobId       Int
+  source      String
+  title       String
+  url         String
+  price       Decimal?     @db.Decimal(12, 2)
+  district    String?
+  disposition String?
+  foundAt     DateTime     @default(now())
+  isNew       Boolean      @default(true)
+  job         ScheduledJob @relation(fields: [jobId], references: [id])
+
+  @@index([jobId])
+  @@index([foundAt])
+  @@index([isNew])
+  @@map("monitoring_results")
+}
+
+model AgentRun {
+  id              Int      @id @default(autoincrement())
+  sessionId       String
+  userQuery       String
+  toolsCalledJson Json
+  outputSummary   String?
+  createdAt       DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([createdAt])
+  @@map("agent_runs")
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  CONVERTED
+  LOST
+}
+
+enum PropertyType {
+  BYT
+  DUM
+  POZEMEK
+  KOMERCNI
+}
+
+enum PropertyStatus {
+  AVAILABLE
+  IN_NEGOTIATION
+  SOLD
+  RENTED
+  WITHDRAWN
+}
+
+enum DealStatus {
+  IN_PROGRESS
+  CLOSED_WON
+  CLOSED_LOST
+}
+
+enum ClientSegment {
+  INVESTOR
+  PRVNI_KUPUJICI
+  UPGRADER
+  DOWNGRADER
+  PRENAJIMATEL
+}
+
+enum AcquisitionSource {
+  SREALITY
+  BEZREALITKY
+  DOPORUCENI
+  WEB
+  INZERCE
+  LINKEDIN
+}
+
+enum ShowingStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum TaskStatus {
+  OPEN
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum JobStatus {
+  ACTIVE
+  PAUSED
+  ERROR
+}

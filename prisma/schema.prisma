@@ -21,6 +21,7 @@ model Client {
   properties        Property[]        @relation("PropertyOwner")
   showings          Showing[]
   investor          Investor?
+  callLogs          CallLog[]
 
   @@index([createdAt])
   @@index([acquisitionSource])
@@ -110,6 +111,7 @@ model Showing {
   createdAt             DateTime      @default(now())
   client                Client        @relation(fields: [clientId], references: [id])
   property              Property      @relation(fields: [propertyId], references: [id])
+  callLogs              CallLog[]
 
   @@index([scheduledAt])
   @@index([status])
@@ -344,4 +346,32 @@ enum DocumentType {
   LIST_VLASTNICTVI
   FOTODOKUMENTACE
   OSTATNI
+}
+
+enum CallStatus {
+  PENDING
+  INITIATED
+  FAILED
+  NO_PHONE
+  SKIPPED
+}
+
+model CallLog {
+  id               Int        @id @default(autoincrement())
+  showingId        Int
+  clientId         Int
+  phoneNormalized  String?
+  status           CallStatus @default(PENDING)
+  elevenLabsCallId String?    @map("elevenlabs_call_id")
+  errorMessage     String?
+  callDate         DateTime   @db.Date
+  createdAt        DateTime   @default(now())
+  showing          Showing    @relation(fields: [showingId], references: [id])
+  client           Client     @relation(fields: [clientId], references: [id])
+
+  @@unique([showingId, callDate])
+  @@index([callDate])
+  @@index([showingId])
+  @@index([clientId])
+  @@map("call_logs")
 }

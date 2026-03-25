@@ -91,6 +91,14 @@ export const DOCUMENT_TYPE_LABELS: Record<string, string> = {
   OSTATNI: "Ostatní",
 }
 
+export const CALL_STATUS_LABELS: Record<string, string> = {
+  PENDING: "Čeká",
+  INITIATED: "Zahájeno",
+  FAILED: "Selhalo",
+  NO_PHONE: "Bez telefonu",
+  SKIPPED: "Přeskočeno",
+}
+
 // Status badge color maps
 export const STATUS_COLORS: Record<string, string> = {
   // Property
@@ -132,4 +140,8 @@ export const STATUS_COLORS: Record<string, string> = {
   // Task status
   OPEN: "text-blue-400 border-blue-500/20 bg-blue-500/10",
   DONE: "text-emerald-400 border-emerald-500/20 bg-emerald-500/10",
+  // Call status
+  PENDING: "text-amber-400 border-amber-500/20 bg-amber-500/10",
+  INITIATED: "text-emerald-400 border-emerald-500/20 bg-emerald-500/10",
+  NO_PHONE: "text-muted-foreground border-border/40 bg-secondary/40",
 }

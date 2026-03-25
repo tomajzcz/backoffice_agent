@@ -72,7 +72,7 @@ export function ChatPanel({ messages, input, isLoading, error, onInputChange, on
           style={{ fontFamily: "'JetBrains Mono', monospace" }}
         >
           <LayoutDashboard className="w-3.5 h-3.5" />
-          Monitoring
+          Automatizace
         </Link>
       </div>
 

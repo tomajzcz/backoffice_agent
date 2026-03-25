@@ -3,12 +3,14 @@
 import { Sparkles } from "lucide-react"
 
 const PROMPTS = [
-  "Kolik nových klientů jsme získali v Q1 2025?",
+  "Ranní briefing — jaký je operativní stav firmy?",
+  "Kolik bytů je aktuálně v rekonstrukci? Jsou nějaké zaseklé?",
+  "Jaké úkoly jsou po termínu?",
+  "Jaká je očekávaná ziskovost našich nemovitostí?",
+  "Připrav přehled pro investora Nováka",
+  "Kde máme největší mezery v datech a dokumentaci?",
+  "Analyzuj nové nabídky z monitoringu Holešovic",
   "Ukaž mi vývoj leadů a prodejů za posledních 6 měsíců",
-  "Jaký je breakdown zdrojů nových klientů za celý rok 2025?",
-  "Porovnej Q3 a Q4 2024 z pohledu počtu klientů",
-  "Ukaž mi trend leadů za posledních 12 měsíců",
-  "Kolik klientů jsme získali v Q2 2025?",
 ]
 
 interface Props {

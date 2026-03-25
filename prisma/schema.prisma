@@ -20,6 +20,7 @@ model Client {
   deals             Deal[]
   properties        Property[]        @relation("PropertyOwner")
   showings          Showing[]
+  investor          Investor?
 
   @@index([createdAt])
   @@index([acquisitionSource])
@@ -45,28 +46,37 @@ model Lead {
 }
 
 model Property {
-  id                 Int            @id @default(autoincrement())
+  id                 Int                @id @default(autoincrement())
   address            String
   district           String
   type               PropertyType
-  price              Decimal        @db.Decimal(12, 2)
-  status             PropertyStatus @default(AVAILABLE)
-  areaM2             Decimal        @db.Decimal(8, 2)
+  price              Decimal            @db.Decimal(12, 2)
+  status             PropertyStatus     @default(AVAILABLE)
+  areaM2             Decimal            @db.Decimal(8, 2)
   disposition        String?
   yearBuilt          Int?
   lastRenovationYear Int?
   renovationNotes    String?
+  lifecycleStage     LifecycleStage?
+  stageChangedAt     DateTime?
+  purchasePrice      Decimal?           @db.Decimal(12, 2)
+  renovationCost     Decimal?           @db.Decimal(12, 2)
+  expectedSalePrice  Decimal?           @db.Decimal(12, 2)
   ownerId            Int?
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
   deals              Deal[]
-  owner              Client?        @relation("PropertyOwner", fields: [ownerId], references: [id])
+  owner              Client?            @relation("PropertyOwner", fields: [ownerId], references: [id])
   showings           Showing[]
+  tasks              AgentTask[]
+  documents          Document[]
+  investorProperties InvestorProperty[]
 
   @@index([district])
   @@index([status])
   @@index([createdAt])
   @@index([lastRenovationYear])
+  @@index([lifecycleStage])
   @@map("properties")
 }
 
@@ -81,6 +91,7 @@ model Deal {
   updatedAt  DateTime   @updatedAt
   client     Client     @relation(fields: [clientId], references: [id])
   property   Property   @relation(fields: [propertyId], references: [id])
+  tasks      AgentTask[]
 
   @@index([status])
   @@index([closedAt])
@@ -126,12 +137,20 @@ model AgentTask {
   status      TaskStatus   @default(OPEN)
   priority    TaskPriority @default(MEDIUM)
   dueDate     DateTime?
+  assignee    String?
+  propertyId  Int?
+  dealId      Int?
   sourceQuery String?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+  property    Property?    @relation(fields: [propertyId], references: [id])
+  deal        Deal?        @relation(fields: [dealId], references: [id])
 
   @@index([status])
   @@index([priority])
+  @@index([dueDate])
+  @@index([propertyId])
+  @@index([dealId])
   @@index([createdAt])
   @@map("agent_tasks")
 }
@@ -161,6 +180,10 @@ model MonitoringResult {
   price       Decimal?     @db.Decimal(12, 2)
   district    String?
   disposition String?
+  areaM2      Decimal?     @db.Decimal(8, 2)
+  pricePerM2  Decimal?     @db.Decimal(10, 2)
+  score       Int?         @default(0)
+  scoreReason String?
   foundAt     DateTime     @default(now())
   isNew       Boolean      @default(true)
   job         ScheduledJob @relation(fields: [jobId], references: [id])
@@ -168,6 +191,7 @@ model MonitoringResult {
   @@index([jobId])
   @@index([foundAt])
   @@index([isNew])
+  @@index([score])
   @@map("monitoring_results")
 }
 
@@ -182,6 +206,53 @@ model AgentRun {
   @@index([sessionId])
   @@index([createdAt])
   @@map("agent_runs")
+}
+
+model Investor {
+  id         Int                @id @default(autoincrement())
+  name       String
+  email      String             @unique
+  phone      String?
+  company    String?
+  notes      String?
+  clientId   Int?               @unique
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  client     Client?            @relation(fields: [clientId], references: [id])
+  properties InvestorProperty[]
+
+  @@index([createdAt])
+  @@map("investors")
+}
+
+model InvestorProperty {
+  id             Int      @id @default(autoincrement())
+  investorId     Int
+  propertyId     Int
+  investedAmount Decimal? @db.Decimal(12, 2)
+  notes          String?
+  investor       Investor @relation(fields: [investorId], references: [id])
+  property       Property @relation(fields: [propertyId], references: [id])
+
+  @@unique([investorId, propertyId])
+  @@index([investorId])
+  @@index([propertyId])
+  @@map("investor_properties")
+}
+
+model Document {
+  id         Int          @id @default(autoincrement())
+  propertyId Int
+  type       DocumentType
+  name       String
+  url        String?
+  uploadedAt DateTime     @default(now())
+  notes      String?
+  property   Property     @relation(fields: [propertyId], references: [id])
+
+  @@index([propertyId])
+  @@index([type])
+  @@map("documents")
 }
 
 enum LeadStatus {
@@ -255,4 +326,22 @@ enum JobStatus {
   ACTIVE
   PAUSED
   ERROR
+}
+
+enum LifecycleStage {
+  ACQUISITION
+  IN_RENOVATION
+  READY_FOR_SALE
+  LISTED
+  SOLD
+}
+
+enum DocumentType {
+  KUPNI_SMLOUVA
+  NAVRH_NA_VKLAD
+  ZNALECKY_POSUDEK
+  ENERGETICKY_STITEK
+  LIST_VLASTNICTVI
+  FOTODOKUMENTACE
+  OSTATNI
 }

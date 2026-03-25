@@ -19,6 +19,9 @@ export async function getPropertyById(id: number) {
       owner: {
         select: { name: true, email: true, phone: true },
       },
+      _count: {
+        select: { documents: true, tasks: true },
+      },
     },
   })
 }
@@ -53,6 +56,7 @@ export interface ListPropertiesFilters {
   district?: string
   type?: string
   status?: string
+  lifecycleStage?: string
   priceMin?: number
   priceMax?: number
   areaMin?: number
@@ -70,6 +74,7 @@ export async function listPropertiesQuery(filters: ListPropertiesFilters) {
   if (filters.district) where.district = { contains: filters.district, mode: "insensitive" }
   if (filters.type) where.type = filters.type as Prisma.EnumPropertyTypeFilter["equals"]
   if (filters.status) where.status = filters.status as Prisma.EnumPropertyStatusFilter["equals"]
+  if (filters.lifecycleStage) where.lifecycleStage = filters.lifecycleStage as Prisma.EnumLifecycleStageNullableFilter["equals"]
   if (filters.priceMin || filters.priceMax) {
     where.price = {}
     if (filters.priceMin) where.price.gte = filters.priceMin
@@ -109,6 +114,10 @@ export async function createPropertyQuery(data: {
   yearBuilt?: number
   lastRenovationYear?: number
   renovationNotes?: string
+  lifecycleStage?: string
+  purchasePrice?: number
+  renovationCost?: number
+  expectedSalePrice?: number
   ownerId?: number
 }) {
   return prisma.property.create({
@@ -123,6 +132,11 @@ export async function createPropertyQuery(data: {
       yearBuilt: data.yearBuilt,
       lastRenovationYear: data.lastRenovationYear,
       renovationNotes: data.renovationNotes,
+      lifecycleStage: data.lifecycleStage as "ACQUISITION" | "IN_RENOVATION" | "READY_FOR_SALE" | "LISTED" | "SOLD" | undefined,
+      stageChangedAt: data.lifecycleStage ? new Date() : undefined,
+      purchasePrice: data.purchasePrice,
+      renovationCost: data.renovationCost,
+      expectedSalePrice: data.expectedSalePrice,
       ownerId: data.ownerId,
     },
     include: { owner: { select: { name: true, email: true, phone: true } } },
@@ -140,6 +154,10 @@ export async function updatePropertyQuery(id: number, data: {
   yearBuilt?: number
   lastRenovationYear?: number
   renovationNotes?: string
+  lifecycleStage?: string
+  purchasePrice?: number
+  renovationCost?: number
+  expectedSalePrice?: number
   ownerId?: number
 }) {
   const updateData: Prisma.PropertyUpdateInput = {}
@@ -153,6 +171,13 @@ export async function updatePropertyQuery(id: number, data: {
   if (data.yearBuilt !== undefined) updateData.yearBuilt = data.yearBuilt
   if (data.lastRenovationYear !== undefined) updateData.lastRenovationYear = data.lastRenovationYear
   if (data.renovationNotes !== undefined) updateData.renovationNotes = data.renovationNotes
+  if (data.lifecycleStage !== undefined) {
+    updateData.lifecycleStage = data.lifecycleStage as "ACQUISITION" | "IN_RENOVATION" | "READY_FOR_SALE" | "LISTED" | "SOLD"
+    updateData.stageChangedAt = new Date()
+  }
+  if (data.purchasePrice !== undefined) updateData.purchasePrice = data.purchasePrice
+  if (data.renovationCost !== undefined) updateData.renovationCost = data.renovationCost
+  if (data.expectedSalePrice !== undefined) updateData.expectedSalePrice = data.expectedSalePrice
   if (data.ownerId !== undefined) updateData.owner = { connect: { id: data.ownerId } }
 
   return prisma.property.update({
@@ -164,4 +189,56 @@ export async function updatePropertyQuery(id: number, data: {
 
 export async function deletePropertyQuery(id: number) {
   return prisma.property.delete({ where: { id } })
+}
+
+// ─── Lifecycle pipeline query ──────────────────────────────────────────────
+
+export async function getPropertiesByLifecycle(
+  stage?: string,
+  district?: string,
+) {
+  const where: Prisma.PropertyWhereInput = {}
+  if (stage) where.lifecycleStage = stage as Prisma.EnumLifecycleStageNullableFilter["equals"]
+  if (district) where.district = { contains: district, mode: "insensitive" }
+
+  const [items, byStage] = await Promise.all([
+    prisma.property.findMany({
+      where,
+      include: { owner: { select: { name: true } } },
+      orderBy: [{ lifecycleStage: "asc" }, { stageChangedAt: "asc" }],
+    }),
+    prisma.property.groupBy({
+      by: ["lifecycleStage"],
+      _count: true,
+      where: district ? { district: { contains: district, mode: "insensitive" } } : undefined,
+    }),
+  ])
+
+  return {
+    items,
+    byStage: byStage
+      .filter((g) => g.lifecycleStage !== null)
+      .map((g) => ({
+        stage: g.lifecycleStage!,
+        count: g._count,
+      })),
+  }
+}
+
+// ─── Profitability query ────────────────────────────────────────────────────
+
+export async function getPropertiesWithCosts(filters?: {
+  propertyId?: number
+  district?: string
+}) {
+  const where: Prisma.PropertyWhereInput = {
+    purchasePrice: { not: null },
+  }
+  if (filters?.propertyId) where.id = filters.propertyId
+  if (filters?.district) where.district = { contains: filters.district, mode: "insensitive" }
+
+  return prisma.property.findMany({
+    where,
+    orderBy: { price: "desc" },
+  })
 }

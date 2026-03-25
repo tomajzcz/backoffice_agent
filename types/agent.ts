@@ -76,6 +76,9 @@ export interface CreateAgentTaskResult {
   priority: string
   priorityLabel: string
   dueDate: string | null
+  assignee: string | null
+  propertyAddress: string | null
+  dealId: number | null
   chartType: "none"
 }
 
@@ -217,6 +220,14 @@ export interface GetPropertyDetailsResult {
     yearBuilt: number | null
     lastRenovationYear: number | null
     renovationNotes: string | null
+    lifecycleStage: string | null
+    lifecycleStageLabel: string | null
+    stageChangedAt: string | null
+    purchasePrice: number | null
+    renovationCost: number | null
+    expectedSalePrice: number | null
+    documentCount: number
+    taskCount: number
     ownerName: string | null
     ownerEmail: string | null
     ownerPhone: string | null
@@ -310,6 +321,8 @@ export interface ListPropertiesResult {
     price: number
     status: string
     statusLabel: string
+    lifecycleStage: string | null
+    lifecycleStageLabel: string | null
     areaM2: number
     disposition: string | null
     yearBuilt: number | null
@@ -544,6 +557,223 @@ export interface UpdateShowingResult {
   chartType: "none"
 }
 
+// ─── New operational tool results ─────────────────────────────────────────────
+
+export interface QueryPropertiesByLifecycleResult {
+  toolName: "queryPropertiesByLifecycle"
+  totalCount: number
+  filterStage: string | null
+  filterDistrict: string | null
+  stalledProperties: Array<{
+    id: number
+    address: string
+    district: string
+    lifecycleStage: string
+    lifecycleStageLabel: string
+    daysInStage: number
+  }>
+  properties: Array<{
+    id: number
+    address: string
+    district: string
+    type: string
+    typeLabel: string
+    price: number
+    status: string
+    statusLabel: string
+    lifecycleStage: string
+    lifecycleStageLabel: string
+    stageChangedAt: string | null
+    daysInStage: number
+    areaM2: number
+    disposition: string | null
+    ownerName: string | null
+  }>
+  byStage: Array<{ stage: string; stageLabel: string; count: number }>
+  chartType: "bar"
+  chartData: Array<{ name: string; pocet: number }>
+}
+
+export interface ScanOverdueTasksResult {
+  toolName: "scanOverdueTasks"
+  totalOverdue: number
+  totalDueSoon: number
+  overdueTasks: Array<{
+    id: number
+    title: string
+    description: string | null
+    priority: string
+    priorityLabel: string
+    dueDate: string
+    daysOverdue: number
+    status: string
+    statusLabel: string
+    assignee: string | null
+    propertyAddress: string | null
+    propertyId: number | null
+    dealId: number | null
+  }>
+  dueSoonTasks: Array<{
+    id: number
+    title: string
+    priority: string
+    priorityLabel: string
+    dueDate: string
+    daysUntilDue: number
+    assignee: string | null
+    propertyAddress: string | null
+  }>
+  byPriority: Array<{ priority: string; priorityLabel: string; count: number }>
+  chartType: "bar"
+  chartData: Array<{ name: string; pocet: number }>
+}
+
+export interface ScanOperationalHealthResult {
+  toolName: "scanOperationalHealth"
+  overallScore: number
+  totalIssues: number
+  categories: Array<{
+    category: string
+    categoryLabel: string
+    severity: "high" | "medium" | "low"
+    count: number
+    items: Array<{
+      id: number
+      label: string
+      detail: string
+    }>
+  }>
+  chartType: "bar"
+  chartData: Array<{ name: string; pocet: number }>
+}
+
+export interface CalculatePropertyProfitabilityResult {
+  toolName: "calculatePropertyProfitability"
+  totalProperties: number
+  totalInvestment: number
+  totalExpectedRevenue: number
+  totalPotentialProfit: number
+  averageROI: number
+  properties: Array<{
+    id: number
+    address: string
+    district: string
+    type: string
+    typeLabel: string
+    purchasePrice: number
+    renovationCost: number
+    expectedSalePrice: number
+    totalInvestment: number
+    potentialProfit: number
+    roi: number
+    lifecycleStage: string | null
+    lifecycleStageLabel: string | null
+  }>
+  chartType: "bar"
+  chartData: Array<{ name: string; pocet: number }>
+}
+
+export interface GetInvestorOverviewResult {
+  toolName: "getInvestorOverview"
+  totalInvestors: number
+  totalPortfolioValue: number
+  totalInvested: number
+  investors: Array<{
+    id: number
+    name: string
+    email: string
+    company: string | null
+    propertyCount: number
+    totalInvested: number
+    totalCurrentValue: number
+    properties: Array<{
+      id: number
+      address: string
+      district: string
+      lifecycleStage: string | null
+      lifecycleStageLabel: string | null
+      investedAmount: number | null
+      currentValue: number
+    }>
+  }>
+  chartType: "bar"
+  chartData: Array<{ name: string; pocet: number }>
+}
+
+export interface GetPropertyDocumentsResult {
+  toolName: "getPropertyDocuments"
+  propertyId: number
+  propertyAddress: string
+  totalDocuments: number
+  documents: Array<{
+    id: number
+    type: string
+    typeLabel: string
+    name: string
+    url: string | null
+    uploadedAt: string
+    notes: string | null
+  }>
+  chartType: "none"
+}
+
+export interface ScanMissingDocumentsResult {
+  toolName: "scanMissingDocuments"
+  totalPropertiesChecked: number
+  totalWithMissingDocs: number
+  properties: Array<{
+    id: number
+    address: string
+    district: string
+    status: string
+    statusLabel: string
+    lifecycleStage: string | null
+    lifecycleStageLabel: string | null
+    existingDocs: string[]
+    missingDocs: string[]
+    missingDocLabels: string[]
+    completeness: number
+  }>
+  chartType: "bar"
+  chartData: Array<{ name: string; pocet: number }>
+}
+
+export interface AnalyzeNewListingsResult {
+  toolName: "analyzeNewListings"
+  jobId: number
+  jobName: string
+  days: number
+  totalResults: number
+  marketStats: {
+    avgPrice: number
+    avgPricePerM2: number
+    priceRange: { min: number; max: number }
+    medianPrice: number
+  }
+  topListings: Array<{
+    id: number
+    source: string
+    title: string
+    url: string
+    price: number | null
+    pricePerM2: number | null
+    district: string | null
+    disposition: string | null
+    areaM2: number | null
+    score: number
+    scoreReason: string | null
+    foundAt: string
+    isNew: boolean
+  }>
+  byDisposition: Array<{
+    disposition: string
+    count: number
+    avgPrice: number
+  }>
+  chartType: "bar"
+  chartData: Array<{ name: string; pocet: number }>
+}
+
 export type AgentToolResult =
   | QueryNewClientsResult
   | QueryLeadsSalesTimelineResult
@@ -579,6 +809,14 @@ export type AgentToolResult =
   | CreateShowingResult
   | UpdateShowingResult
   | PrepareEmailDraftResult
+  | QueryPropertiesByLifecycleResult
+  | ScanOverdueTasksResult
+  | ScanOperationalHealthResult
+  | CalculatePropertyProfitabilityResult
+  | GetInvestorOverviewResult
+  | GetPropertyDocumentsResult
+  | ScanMissingDocumentsResult
+  | AnalyzeNewListingsResult
 
 // ─── Email approval ──────────────────────────────────────────────────────────
 

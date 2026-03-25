@@ -26,12 +26,26 @@ export const createAgentTaskTool = tool({
       .string()
       .optional()
       .describe("Termín splnění ve formátu ISO 8601 (YYYY-MM-DD), volitelné"),
+    assignee: z
+      .string()
+      .optional()
+      .describe("Zodpovědná osoba (např. Pepa, Martin)"),
+    propertyId: z
+      .number()
+      .int()
+      .optional()
+      .describe("ID nemovitosti, ke které se úkol váže"),
+    dealId: z
+      .number()
+      .int()
+      .optional()
+      .describe("ID obchodu, ke kterému se úkol váže"),
     sourceQuery: z
       .string()
       .optional()
       .describe("Původní dotaz, ze kterého úkol vznikl"),
   }),
-  execute: async ({ title, description, priority, dueDate, sourceQuery }): Promise<CreateAgentTaskResult> => {
+  execute: async ({ title, description, priority, dueDate, assignee, propertyId, dealId, sourceQuery }): Promise<CreateAgentTaskResult> => {
     const parsedDueDate = dueDate ? new Date(dueDate) : undefined
 
     const task = await createTask({
@@ -39,6 +53,9 @@ export const createAgentTaskTool = tool({
       description,
       priority: priority as "LOW" | "MEDIUM" | "HIGH" | "URGENT",
       dueDate: parsedDueDate,
+      assignee,
+      propertyId,
+      dealId,
       sourceQuery,
     })
 
@@ -49,6 +66,9 @@ export const createAgentTaskTool = tool({
       priority: task.priority,
       priorityLabel: PRIORITY_LABELS[task.priority] ?? task.priority,
       dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+      assignee: task.assignee ?? null,
+      propertyAddress: task.propertyAddress ?? null,
+      dealId: task.dealId ?? null,
       chartType: "none",
     }
   },

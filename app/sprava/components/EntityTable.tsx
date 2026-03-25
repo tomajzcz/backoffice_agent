@@ -15,7 +15,7 @@ export interface Column {
   key: string
   label: string
   sortable?: boolean
-  type?: "text" | "number" | "currency" | "date" | "badge" | "id"
+  type?: "text" | "number" | "currency" | "date" | "badge" | "id" | "link"
   labelMap?: Record<string, string>
   className?: string
 }
@@ -32,6 +32,7 @@ interface Props {
   totalPages: number
   totalCount: number
   onPageChange: (page: number) => void
+  rowClassName?: (row: Record<string, unknown>) => string
 }
 
 function formatDate(d: string) {
@@ -59,6 +60,18 @@ function CellValue({ column, value }: { column: Column; value: unknown }) {
       return <span className="font-mono">{String(value)}</span>
     case "date":
       return <span className="text-muted-foreground/60 font-mono">{String(value).includes("T") && String(value).includes(":") ? formatDateTime(String(value)) : formatDate(String(value))}</span>
+    case "link":
+      return (
+        <a
+          href={String(value)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary/80 hover:text-primary underline underline-offset-2 text-xs truncate inline-block max-w-[180px]"
+          onClick={(e) => e.stopPropagation()}
+        >
+          Otevřít ↗
+        </a>
+      )
     case "badge": {
       const label = column.labelMap?.[String(value)] ?? String(value)
       const color = STATUS_COLORS[String(value)] ?? "text-muted-foreground border-border/40 bg-secondary/40"
@@ -75,7 +88,7 @@ function CellValue({ column, value }: { column: Column; value: unknown }) {
 
 export function EntityTable({
   columns, data, sortBy, sortOrder, onSort, onEdit, onDelete,
-  page, totalPages, totalCount, onPageChange,
+  page, totalPages, totalCount, onPageChange, rowClassName,
 }: Props) {
   return (
     <div>
@@ -112,7 +125,7 @@ export function EntityTable({
               data.map((row, i) => (
                 <tr
                   key={String(row.id)}
-                  className="border-t border-border/20 hover:bg-secondary/20 transition-colors"
+                  className={`border-t border-border/20 hover:bg-secondary/20 transition-colors ${rowClassName?.(row) ?? ""}`}
                 >
                   {columns.map((col) => (
                     <td key={col.key} className="py-2 px-3 max-w-[200px] truncate">

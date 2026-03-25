@@ -94,6 +94,8 @@ const CLIENT_SEGMENTS: ClientSegment[] = [
   ClientSegment.PRENAJIMATEL,
 ]
 
+type LifecycleStage = "ACQUISITION" | "IN_RENOVATION" | "READY_FOR_SALE" | "LISTED" | "SOLD"
+
 // ─── Seed functions ──────────────────────────────────────────────────────────
 
 async function seedClients() {
@@ -159,6 +161,16 @@ async function seedProperties() {
     PropertyStatus.WITHDRAWN,
   ]
 
+  // Lifecycle stage assignment based on index for variety
+  function getLifecycleStage(i: number, status: PropertyStatus): LifecycleStage {
+    if (status === PropertyStatus.SOLD) return "SOLD"
+    if (i < 5) return "ACQUISITION"
+    if (i < 10) return "IN_RENOVATION"
+    if (i < 15) return "READY_FOR_SALE"
+    if (status === PropertyStatus.WITHDRAWN) return randomItem(["ACQUISITION", "IN_RENOVATION"] as LifecycleStage[])
+    return "LISTED"
+  }
+
   for (let i = 0; i < 55; i++) {
     const district = i < 10
       ? randomItem(PREMIUM_DISTRICTS)
@@ -177,12 +189,30 @@ async function seedProperties() {
     // 15 properties intentionally missing renovation data (for Day 2 tool)
     const missingRenovation = i >= 40
 
+    const status = randomItem(STATUSES)
+    const lifecycleStage = getLifecycleStage(i, status)
+
+    const createdAt = new Date(
+      randomInt(new Date("2024-06-01").getTime(), new Date("2026-01-01").getTime())
+    )
+
+    // stageChangedAt: for stalled identification, some IN_RENOVATION get old dates
+    const stageChangedAt = (lifecycleStage === "IN_RENOVATION" && i < 7)
+      ? addDays(createdAt, randomInt(1, 10)) // >45 days ago = stalled
+      : addDays(createdAt, randomInt(1, 60))
+
+    // Financial data for ~25 properties
+    const hasFinancials = i < 25
+    const purchasePrice = hasFinancials ? Math.round(basePrice * (0.6 + Math.random() * 0.25)) : null
+    const renovationCost = hasFinancials && purchasePrice ? Math.round(purchasePrice * (0.05 + Math.random() * 0.15)) : null
+    const expectedSalePrice = hasFinancials ? Math.round(basePrice * (1.05 + Math.random() * 0.30)) : null
+
     properties.push({
       address: `${randomItem(STREETS)} ${randomInt(1, 80)}, ${district}`,
       district,
       type,
       price: basePrice,
-      status: randomItem(STATUSES),
+      status,
       areaM2: type === PropertyType.BYT
         ? randomInt(35, 180)
         : type === PropertyType.DUM
@@ -203,10 +233,13 @@ async function seedProperties() {
             "Vyměněna okna, nové podlahy dřevo 2021",
             null,
           ]),
+      lifecycleStage,
+      stageChangedAt,
+      purchasePrice,
+      renovationCost,
+      expectedSalePrice,
       ownerId: Math.random() > 0.4 ? randomItem(clientIds) : null,
-      createdAt: new Date(
-        randomInt(new Date("2024-06-01").getTime(), new Date("2026-01-01").getTime())
-      ),
+      createdAt,
     })
   }
 
@@ -406,7 +439,7 @@ async function seedWeeklyReports() {
 async function seedScheduledJobs() {
   console.log("Seeding scheduled jobs...")
 
-  const jobs = await prisma.scheduledJob.createMany({
+  await prisma.scheduledJob.createMany({
     data: [
       {
         name: "Monitor Praha Holešovice",
@@ -437,7 +470,7 @@ async function seedScheduledJobs() {
     ],
   })
 
-  // Add monitoring results
+  // Add monitoring results with scoring
   const job1 = await prisma.scheduledJob.findFirst({ where: { name: "Monitor Praha Holešovice" } })
   const job2 = await prisma.scheduledJob.findFirst({ where: { name: "Monitor Praha Žižkov" } })
 
@@ -452,6 +485,10 @@ async function seedScheduledJobs() {
           price: 7_890_000,
           district: "Praha 7 – Holešovice",
           disposition: "3+kk",
+          areaM2: 78,
+          pricePerM2: 101154,
+          score: 85,
+          scoreReason: "Dobrá cena/m², atraktivní lokalita Holešovice, 3+kk ideální pro flip",
           foundAt: addDays(new Date(), -1),
           isNew: true,
         },
@@ -463,6 +500,10 @@ async function seedScheduledJobs() {
           price: 5_450_000,
           district: "Praha 7 – Holešovice",
           disposition: "2+kk",
+          areaM2: 55,
+          pricePerM2: 99091,
+          score: 78,
+          scoreReason: "Slušná cena/m², menší dispozice ale dobrá lokalita",
           foundAt: addDays(new Date(), -1),
           isNew: true,
         },
@@ -474,7 +515,41 @@ async function seedScheduledJobs() {
           price: 11_200_000,
           district: "Praha 7 – Holešovice",
           disposition: "4+kk",
+          areaM2: 112,
+          pricePerM2: 100000,
+          score: 65,
+          scoreReason: "Větší byt, vyšší celková cena, delší doba prodeje",
           foundAt: addDays(new Date(), -2),
+          isNew: false,
+        },
+        {
+          jobId: job1.id,
+          source: "sreality",
+          title: "Prodej bytu 2+1, 48 m², Praha 7 – Holešovice, Tusarova",
+          url: "https://www.sreality.cz/detail/prodej/byt/2+1/praha-holesovice/111222",
+          price: 4_200_000,
+          district: "Praha 7 – Holešovice",
+          disposition: "2+1",
+          areaM2: 48,
+          pricePerM2: 87500,
+          score: 92,
+          scoreReason: "Výborná cena/m², malý byt vhodný pro rychlý flip, Tusarova roste",
+          foundAt: addDays(new Date(), -1),
+          isNew: true,
+        },
+        {
+          jobId: job1.id,
+          source: "bezrealitky",
+          title: "Prodej bytu 1+kk, 32 m², Praha 7 Holešovice, Komunardů",
+          url: "https://www.bezrealitky.cz/nemovitosti-byty-domy/333444",
+          price: 3_100_000,
+          district: "Praha 7 – Holešovice",
+          disposition: "1+kk",
+          areaM2: 32,
+          pricePerM2: 96875,
+          score: 55,
+          scoreReason: "Příliš malá dispozice, omezený trh kupujících po rekonstrukci",
+          foundAt: addDays(new Date(), -3),
           isNew: false,
         },
         {
@@ -485,6 +560,10 @@ async function seedScheduledJobs() {
           price: 4_800_000,
           district: "Praha 3 – Žižkov",
           disposition: "2+1",
+          areaM2: 62,
+          pricePerM2: 77419,
+          score: 88,
+          scoreReason: "Nízká cena/m² pro Žižkov, blízko Jiřího z Poděbrad, skvělý flip potenciál",
           foundAt: addDays(new Date(), -1),
           isNew: true,
         },
@@ -496,6 +575,40 @@ async function seedScheduledJobs() {
           price: 5_950_000,
           district: "Praha 3 – Žižkov",
           disposition: "3+1",
+          areaM2: 74,
+          pricePerM2: 80405,
+          score: 82,
+          scoreReason: "Dobrá cena/m², Bořivojova je žádaná ulice, 3+1 snadno prodejné",
+          foundAt: addDays(new Date(), -1),
+          isNew: true,
+        },
+        {
+          jobId: job2.id,
+          source: "sreality",
+          title: "Prodej bytu 1+1, 38 m², Praha 3 – Žižkov, Chelčického",
+          url: "https://www.sreality.cz/detail/prodej/byt/1+1/praha-zizkov/555666",
+          price: 3_200_000,
+          district: "Praha 3 – Žižkov",
+          disposition: "1+1",
+          areaM2: 38,
+          pricePerM2: 84211,
+          score: 70,
+          scoreReason: "Dobrá cena, ale malá dispozice; vhodné spíše pro pronájem",
+          foundAt: addDays(new Date(), -2),
+          isNew: false,
+        },
+        {
+          jobId: job2.id,
+          source: "bezrealitky",
+          title: "Prodej bytu 3+kk, 85 m², Praha 3 Žižkov, Koněvova",
+          url: "https://www.bezrealitky.cz/nemovitosti-byty-domy/777888",
+          price: 7_200_000,
+          district: "Praha 3 – Žižkov",
+          disposition: "3+kk",
+          areaM2: 85,
+          pricePerM2: 84706,
+          score: 75,
+          scoreReason: "Solidní cena/m², Koněvova ale méně atraktivní než centrum Žižkova",
           foundAt: addDays(new Date(), -1),
           isNew: true,
         },
@@ -503,7 +616,374 @@ async function seedScheduledJobs() {
     })
   }
 
-  console.log("  ✓ Created 2 scheduled jobs + 5 monitoring results")
+  console.log("  ✓ Created 2 scheduled jobs + 9 monitoring results (with scores)")
+}
+
+async function seedAgentTasks() {
+  console.log("Seeding agent tasks...")
+  const properties = await prisma.property.findMany({ select: { id: true }, take: 20 })
+  const deals = await prisma.deal.findMany({ where: { status: "IN_PROGRESS" }, select: { id: true }, take: 5 })
+
+  const now = new Date()
+
+  const tasks = [
+    // 5 overdue tasks
+    {
+      title: "Doplnit energetický štítek — Mánesova 12",
+      description: "Energetický štítek chybí, nutné pro inzerci",
+      status: "OPEN" as const,
+      priority: "HIGH" as const,
+      dueDate: addDays(now, -7),
+      assignee: "Pepa",
+      propertyId: properties[0]?.id ?? null,
+      dealId: null,
+    },
+    {
+      title: "Objednat znalecký posudek — Blanická 45",
+      description: "Posudek potřeba pro hypotéku kupujícího",
+      status: "OPEN" as const,
+      priority: "URGENT" as const,
+      dueDate: addDays(now, -3),
+      assignee: "Pepa",
+      propertyId: properties[1]?.id ?? null,
+      dealId: deals[0]?.id ?? null,
+    },
+    {
+      title: "Zkontrolovat stav rekonstrukce — Italská 8",
+      description: "Stavbyvedoucí slíbil dokončení minulý týden",
+      status: "IN_PROGRESS" as const,
+      priority: "HIGH" as const,
+      dueDate: addDays(now, -5),
+      assignee: "Martin",
+      propertyId: properties[2]?.id ?? null,
+      dealId: null,
+    },
+    {
+      title: "Poslat fotodokumentaci investorovi Novákovi",
+      description: "Investor žádá aktuální fotky z rekonstrukce",
+      status: "OPEN" as const,
+      priority: "MEDIUM" as const,
+      dueDate: addDays(now, -2),
+      assignee: "Pepa",
+      propertyId: properties[3]?.id ?? null,
+      dealId: null,
+    },
+    {
+      title: "Zaregistrovat kupní smlouvu na katastr",
+      description: "Smlouva podepsána, čeká na vklad",
+      status: "OPEN" as const,
+      priority: "URGENT" as const,
+      dueDate: addDays(now, -1),
+      assignee: "Martin",
+      propertyId: properties[4]?.id ?? null,
+      dealId: deals[1]?.id ?? null,
+    },
+    // 4 upcoming tasks
+    {
+      title: "Připravit inzerát pro nový byt — Korunní 33",
+      description: "Rekonstrukce hotová, připravit texty a fotky",
+      status: "OPEN" as const,
+      priority: "MEDIUM" as const,
+      dueDate: addDays(now, 2),
+      assignee: "Pepa",
+      propertyId: properties[5]?.id ?? null,
+      dealId: null,
+    },
+    {
+      title: "Schůzka s investorem Černým — přehled portfolia",
+      description: "Čtvrtletní reporting, připravit prezentaci",
+      status: "OPEN" as const,
+      priority: "HIGH" as const,
+      dueDate: addDays(now, 1),
+      assignee: "Pepa",
+      propertyId: null,
+      dealId: null,
+    },
+    {
+      title: "Ověřit list vlastnictví — Londýnská 5",
+      description: null,
+      status: "OPEN" as const,
+      priority: "MEDIUM" as const,
+      dueDate: addDays(now, 3),
+      assignee: null,
+      propertyId: properties[6]?.id ?? null,
+      dealId: null,
+    },
+    {
+      title: "Kontaktovat správce budovy — oprava stoupačky",
+      description: "Stoupačka teče, nutné řešit před prodejem",
+      status: "OPEN" as const,
+      priority: "HIGH" as const,
+      dueDate: addDays(now, 2),
+      assignee: "Martin",
+      propertyId: properties[7]?.id ?? null,
+      dealId: null,
+    },
+    // 4 done tasks
+    {
+      title: "Nafotit nemovitost pro inzerci — Španělská 22",
+      description: null,
+      status: "DONE" as const,
+      priority: "MEDIUM" as const,
+      dueDate: addDays(now, -10),
+      assignee: "Pepa",
+      propertyId: properties[8]?.id ?? null,
+      dealId: null,
+    },
+    {
+      title: "Odeslat kupní smlouvu právníkovi",
+      description: "Smlouva zkontrolována a odeslána",
+      status: "DONE" as const,
+      priority: "HIGH" as const,
+      dueDate: addDays(now, -14),
+      assignee: "Pepa",
+      propertyId: properties[9]?.id ?? null,
+      dealId: deals[2]?.id ?? null,
+    },
+    {
+      title: "Aktualizovat cenu v inzerátu — Chodská 7",
+      description: null,
+      status: "DONE" as const,
+      priority: "LOW" as const,
+      dueDate: addDays(now, -8),
+      assignee: "Martin",
+      propertyId: properties[10]?.id ?? null,
+      dealId: null,
+    },
+    {
+      title: "Objednat úklidovou firmu po rekonstrukci",
+      description: null,
+      status: "DONE" as const,
+      priority: "MEDIUM" as const,
+      dueDate: addDays(now, -6),
+      assignee: "Pepa",
+      propertyId: properties[11]?.id ?? null,
+      dealId: null,
+    },
+    // 2 cancelled tasks
+    {
+      title: "Nabídka na koupi pozemku — Modřany",
+      description: "Vlastník si nabídku rozmyslel",
+      status: "CANCELLED" as const,
+      priority: "LOW" as const,
+      dueDate: addDays(now, -20),
+      assignee: null,
+      propertyId: null,
+      dealId: null,
+    },
+    {
+      title: "Jednání s developerem — projekt zrušen",
+      description: null,
+      status: "CANCELLED" as const,
+      priority: "MEDIUM" as const,
+      dueDate: addDays(now, -15),
+      assignee: "Martin",
+      propertyId: null,
+      dealId: null,
+    },
+  ]
+
+  for (const task of tasks) {
+    await prisma.agentTask.create({
+      data: {
+        title: task.title,
+        description: task.description,
+        status: task.status,
+        priority: task.priority,
+        dueDate: task.dueDate,
+        assignee: task.assignee,
+        propertyId: task.propertyId,
+        dealId: task.dealId,
+      },
+    })
+  }
+
+  console.log(`  ✓ Created ${tasks.length} agent tasks (5 overdue, 4 upcoming, 4 done, 2 cancelled)`)
+}
+
+async function seedInvestors() {
+  console.log("Seeding investors...")
+
+  // Find clients with INVESTOR segment to link some
+  const investorClients = await prisma.client.findMany({
+    where: { segment: "INVESTOR" },
+    select: { id: true, name: true, email: true, phone: true },
+    take: 3,
+  })
+
+  const properties = await prisma.property.findMany({
+    select: { id: true, price: true },
+    take: 20,
+  })
+
+  const investors = [
+    {
+      name: "Jan Novák",
+      email: "jan.novak@investice.cz",
+      phone: "+420 777 111 222",
+      company: "Novák Invest s.r.o.",
+      notes: "Dlouhodobý investor, preferuje Praha 2 a Praha 7",
+      clientId: investorClients[0]?.id ?? null,
+    },
+    {
+      name: "Petra Černá",
+      email: "petra.cerna@realty-group.cz",
+      phone: "+420 603 333 444",
+      company: "Realty Group CZ",
+      notes: "Zaměřuje se na menší byty pro flip, Praha 3 a Praha 10",
+      clientId: investorClients[1]?.id ?? null,
+    },
+    {
+      name: "Tomáš Dvořák",
+      email: "tomas.dvorak@gmail.com",
+      phone: "+420 721 555 666",
+      company: null,
+      notes: "Privátní investor, 2 byty v portfoliu",
+      clientId: investorClients[2]?.id ?? null,
+    },
+    {
+      name: "Investiční fond Praha a.s.",
+      email: "info@ifp-praha.cz",
+      phone: "+420 222 777 888",
+      company: "Investiční fond Praha a.s.",
+      notes: "Institucionální investor, větší projekty",
+      clientId: null,
+    },
+    {
+      name: "Martin Svoboda",
+      email: "m.svoboda@seznam.cz",
+      phone: "+420 606 999 000",
+      company: null,
+      notes: "Nový investor, první nákup v Q1 2026",
+      clientId: null,
+    },
+  ]
+
+  for (const inv of investors) {
+    const created = await prisma.investor.create({
+      data: {
+        name: inv.name,
+        email: inv.email,
+        phone: inv.phone,
+        company: inv.company,
+        notes: inv.notes,
+        clientId: inv.clientId,
+      },
+    })
+
+    // Link 2-4 properties to each investor
+    const propCount = randomInt(2, Math.min(4, properties.length))
+    const usedIds = new Set<number>()
+    for (let j = 0; j < propCount; j++) {
+      let propId: number
+      let attempts = 0
+      do {
+        propId = randomItem(properties).id
+        attempts++
+      } while (usedIds.has(propId) && attempts < 50)
+      usedIds.add(propId)
+
+      const prop = properties.find((p) => p.id === propId)
+      const investedAmount = prop ? Math.round(Number(prop.price) * (0.7 + Math.random() * 0.2)) : null
+
+      try {
+        await prisma.investorProperty.create({
+          data: {
+            investorId: created.id,
+            propertyId: propId,
+            investedAmount,
+            notes: randomItem([
+              "Koupeno v akvizici Q3 2025",
+              "Rekonstrukce dokončena",
+              "Čeká na prodej",
+              null,
+            ]),
+          },
+        })
+      } catch {
+        // Skip if duplicate constraint
+      }
+    }
+  }
+
+  console.log(`  ✓ Created ${investors.length} investors with property links`)
+}
+
+async function seedDocuments() {
+  console.log("Seeding documents...")
+  const properties = await prisma.property.findMany({ select: { id: true }, take: 55 })
+
+  type DocType = "KUPNI_SMLOUVA" | "NAVRH_NA_VKLAD" | "ZNALECKY_POSUDEK" | "ENERGETICKY_STITEK" | "LIST_VLASTNICTVI" | "FOTODOKUMENTACE" | "OSTATNI"
+
+  const DOC_TYPES: DocType[] = [
+    "KUPNI_SMLOUVA",
+    "ENERGETICKY_STITEK",
+    "LIST_VLASTNICTVI",
+    "FOTODOKUMENTACE",
+    "ZNALECKY_POSUDEK",
+    "NAVRH_NA_VKLAD",
+    "OSTATNI",
+  ]
+
+  const DOC_NAMES: Record<string, string[]> = {
+    KUPNI_SMLOUVA: ["Kupní smlouva 2025", "Kupní smlouva - podepsaná"],
+    NAVRH_NA_VKLAD: ["Návrh na vklad do KN"],
+    ZNALECKY_POSUDEK: ["Znalecký posudek - odhad tržní ceny"],
+    ENERGETICKY_STITEK: ["Energetický štítek budovy - PENB"],
+    LIST_VLASTNICTVI: ["Výpis z katastru nemovitostí", "LV - aktuální"],
+    FOTODOKUMENTACE: ["Fotodokumentace - exteriér", "Fotodokumentace - interiér", "Fotky z rekonstrukce"],
+    OSTATNI: ["Projektová dokumentace", "Protokol o předání"],
+  }
+
+  let count = 0
+
+  // First 30 properties get 2-5 documents
+  for (let i = 0; i < Math.min(30, properties.length); i++) {
+    const propId = properties[i].id
+    const docCount = randomInt(2, 5)
+    const usedTypes = new Set<string>()
+
+    for (let j = 0; j < docCount; j++) {
+      let docType: DocType
+      let attempts = 0
+      do {
+        docType = randomItem(DOC_TYPES)
+        attempts++
+      } while (usedTypes.has(docType) && attempts < 20)
+      usedTypes.add(docType)
+
+      const names = DOC_NAMES[docType] ?? ["Dokument"]
+      await prisma.document.create({
+        data: {
+          propertyId: propId,
+          type: docType,
+          name: randomItem(names),
+          url: `https://drive.google.com/file/d/${faker.string.alphanumeric(20)}/view`,
+          notes: Math.random() > 0.7 ? randomItem(["Ověřeno", "Čeká na podpis", "Platné do 2027", null]) : null,
+        },
+      })
+      count++
+    }
+  }
+
+  // Remaining 25 properties get 0-1 documents (intentionally incomplete)
+  for (let i = 30; i < properties.length; i++) {
+    if (Math.random() < 0.3) {
+      const docType = randomItem(DOC_TYPES)
+      const names = DOC_NAMES[docType] ?? ["Dokument"]
+      await prisma.document.create({
+        data: {
+          propertyId: properties[i].id,
+          type: docType,
+          name: randomItem(names),
+          url: `https://drive.google.com/file/d/${faker.string.alphanumeric(20)}/view`,
+        },
+      })
+      count++
+    }
+  }
+
+  console.log(`  ✓ Created ${count} documents (25 properties with incomplete/no docs)`)
 }
 
 // ─── Main ────────────────────────────────────────────────────────────────────
@@ -513,6 +993,9 @@ async function main() {
 
   // Clear existing data in correct FK order
   await prisma.agentRun.deleteMany()
+  await prisma.document.deleteMany()
+  await prisma.investorProperty.deleteMany()
+  await prisma.investor.deleteMany()
   await prisma.agentTask.deleteMany()
   await prisma.monitoringResult.deleteMany()
   await prisma.scheduledJob.deleteMany()
@@ -532,6 +1015,9 @@ async function main() {
   await seedShowings()
   await seedWeeklyReports()
   await seedScheduledJobs()
+  await seedAgentTasks()
+  await seedInvestors()
+  await seedDocuments()
 
   // Summary
   const counts = {
@@ -543,6 +1029,10 @@ async function main() {
     weeklyReports: await prisma.weeklyReport.count(),
     scheduledJobs: await prisma.scheduledJob.count(),
     monitoringResults: await prisma.monitoringResult.count(),
+    agentTasks: await prisma.agentTask.count(),
+    investors: await prisma.investor.count(),
+    investorProperties: await prisma.investorProperty.count(),
+    documents: await prisma.document.count(),
   }
 
   console.log("\n✅ Seed completed!")

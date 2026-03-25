@@ -6,6 +6,9 @@ import { listClientsQuery, createClientQuery, updateClientQuery, deleteClientQue
 import { listLeadsQuery, createLeadQuery, updateLeadQuery, deleteLeadQuery } from "@/lib/db/queries/leads"
 import { listDealsQuery, createDealQuery, updateDealQuery, deleteDealQuery } from "@/lib/db/queries/deals"
 import { listShowingsQuery, createShowingQuery, updateShowingQuery, deleteShowingQuery, getShowingByIdQuery } from "@/lib/db/queries/showings"
+import { listTasksQuery, createTask, updateTaskQuery, deleteTaskQuery } from "@/lib/db/queries/tasks"
+import { listInvestorsQuery, createInvestorQuery, updateInvestorQuery, deleteInvestorQuery } from "@/lib/db/queries/investors"
+import { listDocumentsQuery, createDocumentQuery, updateDocumentQuery, deleteDocumentQuery } from "@/lib/db/queries/documents"
 import {
   listCalendarEvents,
   createCalendarEvent,
@@ -48,7 +51,8 @@ export async function listPropertiesAction(filters: {
   return {
     items: items.map((p) => ({
       id: p.id, address: p.address, district: p.district, type: p.type,
-      price: Number(p.price), status: p.status, areaM2: Number(p.areaM2),
+      price: Number(p.price), status: p.status, lifecycleStage: p.lifecycleStage,
+      areaM2: Number(p.areaM2),
       disposition: p.disposition, yearBuilt: p.yearBuilt,
       lastRenovationYear: p.lastRenovationYear, renovationNotes: p.renovationNotes,
       ownerId: p.ownerId, ownerName: p.owner?.name ?? null,
@@ -349,13 +353,189 @@ export async function deleteShowingAction(id: number): Promise<ActionResult> {
 export async function getFormOptionsAction(): Promise<{
   properties: FormOption[]
   clients: FormOption[]
+  deals: FormOption[]
 }> {
-  const [properties, clients] = await Promise.all([
+  const [properties, clients, deals] = await Promise.all([
     prisma.property.findMany({ select: { id: true, address: true, district: true }, orderBy: { address: "asc" } }),
     prisma.client.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
+    prisma.deal.findMany({
+      where: { status: "IN_PROGRESS" },
+      select: { id: true, property: { select: { address: true } }, client: { select: { name: true } } },
+      orderBy: { createdAt: "desc" },
+    }),
   ])
   return {
     properties: properties.map(p => ({ id: p.id, label: `${p.address} (${p.district})` })),
     clients: clients.map(c => ({ id: c.id, label: c.name })),
+    deals: deals.map(d => ({ id: d.id, label: `#${d.id} ${d.property.address} — ${d.client.name}` })),
   }
+}
+
+// ─── Tasks ───────────────────────────────────────────────────────────────────
+
+export async function listTasksAction(filters: {
+  status?: string; priority?: string; search?: string
+  limit: number; offset: number; sortBy: string; sortOrder: "asc" | "desc"
+}) {
+  const { items, total } = await listTasksQuery(filters)
+  return {
+    items: items.map((t) => ({
+      id: t.id, title: t.title, description: t.description,
+      status: t.status, priority: t.priority,
+      dueDate: t.dueDate?.toISOString() ?? null,
+      assignee: t.assignee,
+      propertyId: t.propertyId,
+      propertyAddress: t.property?.address ?? null,
+      dealId: t.dealId,
+      createdAt: t.createdAt.toISOString(),
+    })),
+    total,
+  }
+}
+
+export async function createTaskAction(data: {
+  title: string; description?: string; priority: string; status?: string
+  dueDate?: string; assignee?: string; propertyId?: number; dealId?: number
+}): Promise<ActionResult> {
+  try {
+    const task = await createTask({
+      title: data.title,
+      description: data.description,
+      priority: data.priority as "LOW" | "MEDIUM" | "HIGH" | "URGENT",
+      dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
+      assignee: data.assignee,
+      propertyId: data.propertyId,
+      dealId: data.dealId,
+    })
+    revalidatePath("/sprava")
+    return { success: true, data: { id: task.id } }
+  } catch (e) { return handleError(e) }
+}
+
+export async function updateTaskAction(id: number, data: {
+  title?: string; description?: string; status?: string; priority?: string
+  dueDate?: string | null; assignee?: string | null; propertyId?: number; dealId?: number
+}): Promise<ActionResult> {
+  try {
+    const updateData: Record<string, unknown> = {}
+    if (data.title !== undefined) updateData.title = data.title
+    if (data.description !== undefined) updateData.description = data.description
+    if (data.status !== undefined) updateData.status = data.status
+    if (data.priority !== undefined) updateData.priority = data.priority
+    if (data.dueDate !== undefined) updateData.dueDate = data.dueDate ? new Date(data.dueDate) : null
+    if (data.assignee !== undefined) updateData.assignee = data.assignee
+
+    await updateTaskQuery(id, updateData)
+    revalidatePath("/sprava")
+    return { success: true, data: { id } }
+  } catch (e) { return handleError(e) }
+}
+
+export async function deleteTaskAction(id: number): Promise<ActionResult> {
+  try {
+    await deleteTaskQuery(id)
+    revalidatePath("/sprava")
+    return { success: true, data: { id } }
+  } catch (e) { return handleError(e) }
+}
+
+// ─── Investors ───────────────────────────────────────────────────────────────
+
+export async function listInvestorsAction(filters: {
+  search?: string
+  limit: number; offset: number; sortBy: string; sortOrder: "asc" | "desc"
+}) {
+  const { items, total } = await listInvestorsQuery(filters)
+  return {
+    items: items.map((inv) => {
+      const totalInvested = inv.properties.reduce(
+        (s, ip) => s + (ip.investedAmount ? Number(ip.investedAmount) : 0), 0,
+      )
+      const portfolioValue = inv.properties.reduce(
+        (s, ip) => s + Number(ip.property.price), 0,
+      )
+      return {
+        id: inv.id, name: inv.name, email: inv.email, phone: inv.phone,
+        company: inv.company, notes: inv.notes,
+        propertyCount: inv.properties.length,
+        totalInvested, portfolioValue,
+        createdAt: inv.createdAt.toISOString(),
+      }
+    }),
+    total,
+  }
+}
+
+export async function createInvestorAction(data: {
+  name: string; email: string; phone?: string; company?: string; notes?: string
+}): Promise<ActionResult> {
+  try {
+    const inv = await createInvestorQuery(data)
+    revalidatePath("/sprava")
+    return { success: true, data: { id: inv.id } }
+  } catch (e) { return handleError(e) }
+}
+
+export async function updateInvestorAction(id: number, data: {
+  name?: string; email?: string; phone?: string; company?: string; notes?: string
+}): Promise<ActionResult> {
+  try {
+    await updateInvestorQuery(id, data)
+    revalidatePath("/sprava")
+    return { success: true, data: { id } }
+  } catch (e) { return handleError(e) }
+}
+
+export async function deleteInvestorAction(id: number): Promise<ActionResult> {
+  try {
+    await deleteInvestorQuery(id)
+    revalidatePath("/sprava")
+    return { success: true, data: { id } }
+  } catch (e) { return handleError(e) }
+}
+
+// ─── Documents ───────────────────────────────────────────────────────────────
+
+export async function listDocumentsAction(filters: {
+  propertyId?: number; type?: string; search?: string
+  limit: number; offset: number; sortBy: string; sortOrder: "asc" | "desc"
+}) {
+  const { items, total } = await listDocumentsQuery(filters)
+  return {
+    items: items.map((d) => ({
+      id: d.id, propertyId: d.propertyId,
+      propertyAddress: d.property.address,
+      type: d.type, name: d.name, url: d.url, notes: d.notes,
+      uploadedAt: d.uploadedAt.toISOString(),
+    })),
+    total,
+  }
+}
+
+export async function createDocumentAction(data: {
+  propertyId: number; type: string; name: string; url?: string; notes?: string
+}): Promise<ActionResult> {
+  try {
+    const doc = await createDocumentQuery(data)
+    revalidatePath("/sprava")
+    return { success: true, data: { id: doc.id } }
+  } catch (e) { return handleError(e) }
+}
+
+export async function updateDocumentAction(id: number, data: {
+  propertyId?: number; type?: string; name?: string; url?: string; notes?: string
+}): Promise<ActionResult> {
+  try {
+    await updateDocumentQuery(id, data)
+    revalidatePath("/sprava")
+    return { success: true, data: { id } }
+  } catch (e) { return handleError(e) }
+}
+
+export async function deleteDocumentAction(id: number): Promise<ActionResult> {
+  try {
+    await deleteDocumentQuery(id)
+    revalidatePath("/sprava")
+    return { success: true, data: { id } }
+  } catch (e) { return handleError(e) }
 }

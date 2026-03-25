@@ -35,6 +35,7 @@ export function ResultsPanel({ messages, latestToolResult, latestExplainability,
     } else if (
       toolName === "createAgentTask" ||
       toolName === "getPropertyDetails" ||
+      toolName === "getPropertyDocuments" ||
       toolName === "listScheduledJobs" ||
       toolName === "getMonitoringResults" ||
       toolName === "triggerMonitoringJob" ||
@@ -152,6 +153,22 @@ export function ResultsPanel({ messages, latestToolResult, latestExplainability,
                 ? `Událost smazána z kalendáře`
                 : latestToolResult.toolName === "listCalendarEvents"
                 ? `${latestToolResult.totalEvents} událostí v kalendáři`
+                : latestToolResult.toolName === "queryPropertiesByLifecycle"
+                ? `${latestToolResult.totalCount} nemovitostí v pipeline`
+                : latestToolResult.toolName === "scanOverdueTasks"
+                ? `${latestToolResult.totalOverdue} po termínu · ${latestToolResult.totalDueSoon} blížících se`
+                : latestToolResult.toolName === "scanOperationalHealth"
+                ? `Zdraví: ${latestToolResult.overallScore}/100 · ${latestToolResult.totalIssues} problémů`
+                : latestToolResult.toolName === "calculatePropertyProfitability"
+                ? `${latestToolResult.totalProperties} nemovitostí · ROI Ø ${latestToolResult.averageROI}%`
+                : latestToolResult.toolName === "getInvestorOverview"
+                ? `${latestToolResult.totalInvestors} investorů`
+                : latestToolResult.toolName === "getPropertyDocuments"
+                ? `${latestToolResult.totalDocuments} dokumentů · ${latestToolResult.propertyAddress}`
+                : latestToolResult.toolName === "scanMissingDocuments"
+                ? `${latestToolResult.totalWithMissingDocs} nemovitostí s chybějícími dokumenty`
+                : latestToolResult.toolName === "analyzeNewListings"
+                ? `${latestToolResult.totalResults} nabídek · ${latestToolResult.jobName}`
                 : ""
               : "Čeká na dotaz"}
           </p>

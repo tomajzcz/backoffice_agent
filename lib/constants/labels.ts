@@ -59,6 +59,38 @@ export const JOB_STATUS_LABELS: Record<string, string> = {
   ERROR: "Chyba",
 }
 
+export const LIFECYCLE_STAGE_LABELS: Record<string, string> = {
+  ACQUISITION: "Akvizice",
+  IN_RENOVATION: "V rekonstrukci",
+  READY_FOR_SALE: "Připraveno k prodeji",
+  LISTED: "Inzerováno",
+  SOLD: "Prodáno",
+}
+
+export const TASK_PRIORITY_LABELS: Record<string, string> = {
+  LOW: "Nízká",
+  MEDIUM: "Střední",
+  HIGH: "Vysoká",
+  URGENT: "Urgentní",
+}
+
+export const TASK_STATUS_LABELS: Record<string, string> = {
+  OPEN: "Otevřeno",
+  IN_PROGRESS: "Probíhá",
+  DONE: "Hotovo",
+  CANCELLED: "Zrušeno",
+}
+
+export const DOCUMENT_TYPE_LABELS: Record<string, string> = {
+  KUPNI_SMLOUVA: "Kupní smlouva",
+  NAVRH_NA_VKLAD: "Návrh na vklad",
+  ZNALECKY_POSUDEK: "Znalecký posudek",
+  ENERGETICKY_STITEK: "Energetický štítek",
+  LIST_VLASTNICTVI: "List vlastnictví",
+  FOTODOKUMENTACE: "Fotodokumentace",
+  OSTATNI: "Ostatní",
+}
+
 // Status badge color maps
 export const STATUS_COLORS: Record<string, string> = {
   // Property
@@ -86,4 +118,18 @@ export const STATUS_COLORS: Record<string, string> = {
   ACTIVE: "text-emerald-400 border-emerald-500/20 bg-emerald-500/10",
   PAUSED: "text-amber-400 border-amber-500/20 bg-amber-500/10",
   ERROR: "text-red-400 border-red-500/20 bg-red-500/10",
+  // Lifecycle stages
+  ACQUISITION: "text-blue-400 border-blue-500/20 bg-blue-500/10",
+  IN_RENOVATION: "text-orange-400 border-orange-500/20 bg-orange-500/10",
+  READY_FOR_SALE: "text-cyan-400 border-cyan-500/20 bg-cyan-500/10",
+  LISTED: "text-emerald-400 border-emerald-500/20 bg-emerald-500/10",
+  // SOLD already defined above
+  // Task priority
+  LOW: "text-muted-foreground border-border/40 bg-secondary/40",
+  MEDIUM: "text-blue-400 border-blue-500/20 bg-blue-500/10",
+  HIGH: "text-amber-400 border-amber-500/20 bg-amber-500/10",
+  URGENT: "text-red-400 border-red-500/20 bg-red-500/10",
+  // Task status
+  OPEN: "text-blue-400 border-blue-500/20 bg-blue-500/10",
+  DONE: "text-emerald-400 border-emerald-500/20 bg-emerald-500/10",
 }

@@ -1,7 +1,7 @@
 import { tool } from "ai"
 import { z } from "zod"
 import { getPropertyById } from "@/lib/db/queries/properties"
-import { PROPERTY_TYPE_LABELS as TYPE_LABELS, PROPERTY_STATUS_LABELS as STATUS_LABELS } from "@/lib/constants/labels"
+import { PROPERTY_TYPE_LABELS as TYPE_LABELS, PROPERTY_STATUS_LABELS as STATUS_LABELS, LIFECYCLE_STAGE_LABELS } from "@/lib/constants/labels"
 import type { GetPropertyDetailsResult } from "@/types/agent"
 
 export const getPropertyDetailsTool = tool({
@@ -33,6 +33,16 @@ export const getPropertyDetailsTool = tool({
         yearBuilt: property.yearBuilt,
         lastRenovationYear: property.lastRenovationYear,
         renovationNotes: property.renovationNotes,
+        lifecycleStage: property.lifecycleStage,
+        lifecycleStageLabel: property.lifecycleStage
+          ? (LIFECYCLE_STAGE_LABELS[property.lifecycleStage] ?? property.lifecycleStage)
+          : null,
+        stageChangedAt: property.stageChangedAt?.toISOString() ?? null,
+        purchasePrice: property.purchasePrice ? Number(property.purchasePrice) : null,
+        renovationCost: property.renovationCost ? Number(property.renovationCost) : null,
+        expectedSalePrice: property.expectedSalePrice ? Number(property.expectedSalePrice) : null,
+        documentCount: property._count?.documents ?? 0,
+        taskCount: property._count?.tasks ?? 0,
         ownerName: property.owner?.name ?? null,
         ownerEmail: property.owner?.email ?? null,
         ownerPhone: property.owner?.phone ?? null,

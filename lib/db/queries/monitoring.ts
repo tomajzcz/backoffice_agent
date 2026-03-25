@@ -92,6 +92,30 @@ export async function deleteScheduledJob(id: number) {
   return prisma.scheduledJob.delete({ where: { id } })
 }
 
+// ─── Scored / analyzed results ─────────────────────────────────────────────
+
+export async function getMonitoringResultsScored(
+  jobId: number,
+  days: number = 7,
+  minScore?: number,
+) {
+  const since = new Date()
+  since.setDate(since.getDate() - days)
+
+  const where: Record<string, unknown> = {
+    jobId,
+    foundAt: { gte: since },
+  }
+  if (minScore !== undefined) {
+    where.score = { gte: minScore }
+  }
+
+  return prisma.monitoringResult.findMany({
+    where,
+    orderBy: [{ score: "desc" }, { foundAt: "desc" }],
+  })
+}
+
 // ─── Monitoring Results ────────────────────────────────────────────────────
 
 export async function createMonitoringResults(

@@ -19,6 +19,10 @@ export const createPropertyTool = tool({
     yearBuilt: z.number().int().optional().describe("Rok výstavby"),
     lastRenovationYear: z.number().int().optional().describe("Rok poslední rekonstrukce"),
     renovationNotes: z.string().optional().describe("Poznámky k rekonstrukci"),
+    lifecycleStage: z.enum(["ACQUISITION", "IN_RENOVATION", "READY_FOR_SALE", "LISTED", "SOLD"]).optional().describe("Fáze životního cyklu"),
+    purchasePrice: z.number().positive().optional().describe("Nákupní cena v CZK"),
+    renovationCost: z.number().min(0).optional().describe("Náklady na rekonstrukci v CZK"),
+    expectedSalePrice: z.number().positive().optional().describe("Očekávaná prodejní cena v CZK"),
     ownerId: z.number().int().optional().describe("ID vlastníka (klienta)"),
   }),
   execute: async (params): Promise<CreatePropertyResult> => {

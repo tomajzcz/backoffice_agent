@@ -20,6 +20,10 @@ export const updatePropertyTool = tool({
     yearBuilt: z.number().int().optional().describe("Nový rok výstavby"),
     lastRenovationYear: z.number().int().optional().describe("Nový rok rekonstrukce"),
     renovationNotes: z.string().optional().describe("Nové poznámky k rekonstrukci"),
+    lifecycleStage: z.enum(["ACQUISITION", "IN_RENOVATION", "READY_FOR_SALE", "LISTED", "SOLD"]).optional().describe("Nová fáze životního cyklu"),
+    purchasePrice: z.number().positive().optional().describe("Nákupní cena v CZK"),
+    renovationCost: z.number().min(0).optional().describe("Náklady na rekonstrukci v CZK"),
+    expectedSalePrice: z.number().positive().optional().describe("Očekávaná prodejní cena v CZK"),
     ownerId: z.number().int().optional().describe("Nové ID vlastníka"),
   }),
   execute: async ({ propertyId, ...data }): Promise<UpdatePropertyResult> => {

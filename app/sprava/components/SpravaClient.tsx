@@ -12,10 +12,14 @@ import { ClientForm } from "./ClientForm"
 import { LeadForm } from "./LeadForm"
 import { DealForm } from "./DealForm"
 import { ShowingForm, type CalendarConflictInfo } from "./ShowingForm"
+import { TaskForm } from "./TaskForm"
+import { InvestorForm } from "./InvestorForm"
+import { DocumentForm } from "./DocumentForm"
 import {
-  PROPERTY_TYPE_LABELS, PROPERTY_STATUS_LABELS,
+  PROPERTY_TYPE_LABELS, PROPERTY_STATUS_LABELS, LIFECYCLE_STAGE_LABELS,
   ACQUISITION_SOURCE_LABELS, CLIENT_SEGMENT_LABELS,
   LEAD_STATUS_LABELS, DEAL_STATUS_LABELS, SHOWING_STATUS_LABELS,
+  TASK_PRIORITY_LABELS, TASK_STATUS_LABELS, DOCUMENT_TYPE_LABELS,
 } from "@/lib/constants/labels"
 import {
   listPropertiesAction, createPropertyAction, updatePropertyAction, deletePropertyAction,
@@ -23,6 +27,9 @@ import {
   listLeadsAction, createLeadAction, updateLeadAction, deleteLeadAction,
   listDealsAction, createDealAction, updateDealAction, deleteDealAction,
   listShowingsAction, createShowingAction, updateShowingAction, deleteShowingAction,
+  listTasksAction, createTaskAction, updateTaskAction, deleteTaskAction,
+  listInvestorsAction, createInvestorAction, updateInvestorAction, deleteInvestorAction,
+  listDocumentsAction, createDocumentAction, updateDocumentAction, deleteDocumentAction,
   type ShowingActionResult,
   getFormOptionsAction,
   type FormOption,
@@ -40,6 +47,7 @@ const PROPERTY_COLUMNS: Column[] = [
   { key: "price", label: "Cena", sortable: true, type: "currency" },
   { key: "areaM2", label: "Plocha", sortable: true, type: "number" },
   { key: "status", label: "Status", type: "badge", labelMap: PROPERTY_STATUS_LABELS },
+  { key: "lifecycleStage", label: "Fáze", type: "badge", labelMap: LIFECYCLE_STAGE_LABELS },
   { key: "disposition", label: "Dispozice" },
 ]
 
@@ -82,9 +90,40 @@ const SHOWING_COLUMNS: Column[] = [
   { key: "notes", label: "Poznámky" },
 ]
 
+const TASK_COLUMNS: Column[] = [
+  { key: "id", label: "ID", sortable: true, type: "id" },
+  { key: "title", label: "Název", sortable: true, className: "text-foreground/85 font-medium" },
+  { key: "status", label: "Status", type: "badge", labelMap: TASK_STATUS_LABELS },
+  { key: "priority", label: "Priorita", type: "badge", labelMap: TASK_PRIORITY_LABELS },
+  { key: "dueDate", label: "Termín", sortable: true, type: "date" },
+  { key: "assignee", label: "Zodpovědný" },
+  { key: "propertyAddress", label: "Nemovitost" },
+  { key: "createdAt", label: "Vytvořeno", sortable: true, type: "date" },
+]
+
+const INVESTOR_COLUMNS: Column[] = [
+  { key: "id", label: "ID", sortable: true, type: "id" },
+  { key: "name", label: "Jméno", sortable: true, className: "text-foreground/85 font-medium" },
+  { key: "email", label: "Email", className: "font-mono text-muted-foreground/70" },
+  { key: "phone", label: "Telefon" },
+  { key: "company", label: "Společnost" },
+  { key: "propertyCount", label: "Nemovitostí", type: "number" },
+  { key: "totalInvested", label: "Investováno", type: "currency" },
+  { key: "portfolioValue", label: "Hodnota portfolia", type: "currency" },
+]
+
+const DOCUMENT_COLUMNS: Column[] = [
+  { key: "id", label: "ID", sortable: true, type: "id" },
+  { key: "propertyAddress", label: "Nemovitost", className: "text-foreground/85 font-medium" },
+  { key: "type", label: "Typ", type: "badge", labelMap: DOCUMENT_TYPE_LABELS },
+  { key: "name", label: "Název", sortable: true },
+  { key: "url", label: "Odkaz", type: "link" },
+  { key: "uploadedAt", label: "Nahráno", sortable: true, type: "date" },
+]
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type EntityTab = "properties" | "clients" | "leads" | "deals" | "showings"
+type EntityTab = "properties" | "clients" | "leads" | "deals" | "showings" | "tasks" | "investors" | "documents"
 
 interface TabState {
   items: Record<string, unknown>[]
@@ -123,7 +162,7 @@ export function SpravaClient({ initialProperties }: Props) {
   const [calendarConflict, setCalendarConflict] = useState<CalendarConflictInfo | null>(null)
 
   // Form options (properties/clients lists for dropdowns)
-  const [formOptions, setFormOptions] = useState<{ properties: FormOption[]; clients: FormOption[] } | null>(null)
+  const [formOptions, setFormOptions] = useState<{ properties: FormOption[]; clients: FormOption[]; deals: FormOption[] } | null>(null)
 
   // Per-tab state
   const [tabStates, setTabStates] = useState<Record<EntityTab, TabState>>({
@@ -132,6 +171,9 @@ export function SpravaClient({ initialProperties }: Props) {
     leads: defaultState("createdAt"),
     deals: defaultState("createdAt"),
     showings: defaultState("scheduledAt"),
+    tasks: defaultState("createdAt"),
+    investors: defaultState("name"),
+    documents: defaultState("uploadedAt"),
   })
 
   const currentState = tabStates[activeTab]
@@ -167,6 +209,15 @@ export function SpravaClient({ initialProperties }: Props) {
           break
         case "showings":
           result = await listShowingsAction(filters)
+          break
+        case "tasks":
+          result = await listTasksAction(filters)
+          break
+        case "investors":
+          result = await listInvestorsAction(filters)
+          break
+        case "documents":
+          result = await listDocumentsAction(filters)
           break
       }
 
@@ -209,7 +260,7 @@ export function SpravaClient({ initialProperties }: Props) {
   // ─── CRUD handlers ─────────────────────────────────────────────────────────
 
   async function loadFormOptions() {
-    const needsOptions = activeTab === "properties" || activeTab === "deals" || activeTab === "showings"
+    const needsOptions = activeTab === "properties" || activeTab === "deals" || activeTab === "showings" || activeTab === "tasks" || activeTab === "documents"
     if (needsOptions) {
       const opts = await getFormOptionsAction()
       setFormOptions(opts)
@@ -249,6 +300,9 @@ export function SpravaClient({ initialProperties }: Props) {
         case "leads": result = await updateLeadAction(id, data); break
         case "deals": result = await updateDealAction(id, data); break
         case "showings": result = await updateShowingAction(id, data); break
+        case "tasks": result = await updateTaskAction(id, data); break
+        case "investors": result = await updateInvestorAction(id, data); break
+        case "documents": result = await updateDocumentAction(id, data); break
       }
     } else {
       switch (activeTab) {
@@ -256,6 +310,9 @@ export function SpravaClient({ initialProperties }: Props) {
         case "clients": result = await createClientAction(data as Parameters<typeof createClientAction>[0]); break
         case "leads": result = await createLeadAction(data as Parameters<typeof createLeadAction>[0]); break
         case "deals": result = await createDealAction(data as Parameters<typeof createDealAction>[0]); break
+        case "tasks": result = await createTaskAction(data as Parameters<typeof createTaskAction>[0]); break
+        case "investors": result = await createInvestorAction(data as Parameters<typeof createInvestorAction>[0]); break
+        case "documents": result = await createDocumentAction(data as Parameters<typeof createDocumentAction>[0]); break
         case "showings": {
           const showingResult = await createShowingAction(data as Parameters<typeof createShowingAction>[0]) as ShowingActionResult
           if (!showingResult.success && showingResult.calendarConflict) {
@@ -291,6 +348,9 @@ export function SpravaClient({ initialProperties }: Props) {
       case "leads": result = await deleteLeadAction(id); break
       case "deals": result = await deleteDealAction(id); break
       case "showings": result = await deleteShowingAction(id); break
+      case "tasks": result = await deleteTaskAction(id); break
+      case "investors": result = await deleteInvestorAction(id); break
+      case "documents": result = await deleteDocumentAction(id); break
     }
 
     if (result!.success) {
@@ -311,6 +371,9 @@ export function SpravaClient({ initialProperties }: Props) {
     leads: LEAD_COLUMNS,
     deals: DEAL_COLUMNS,
     showings: SHOWING_COLUMNS,
+    tasks: TASK_COLUMNS,
+    investors: INVESTOR_COLUMNS,
+    documents: DOCUMENT_COLUMNS,
   }
 
   const TAB_LABELS: Record<EntityTab, string> = {
@@ -319,6 +382,9 @@ export function SpravaClient({ initialProperties }: Props) {
     leads: "Leady",
     deals: "Obchody",
     showings: "Prohlídky",
+    tasks: "Úkoly",
+    investors: "Investoři",
+    documents: "Dokumenty",
   }
 
   // ─── Form components map ────────────────────────────────────────────────────
@@ -331,6 +397,9 @@ export function SpravaClient({ initialProperties }: Props) {
       case "leads": return <LeadForm {...props} />
       case "deals": return <DealForm {...props} properties={formOptions?.properties ?? []} clients={formOptions?.clients ?? []} />
       case "showings": return <ShowingForm {...props} properties={formOptions?.properties ?? []} clients={formOptions?.clients ?? []} calendarConflict={calendarConflict} onClearConflict={() => setCalendarConflict(null)} />
+      case "tasks": return <TaskForm {...props} properties={formOptions?.properties ?? []} deals={formOptions?.deals ?? []} />
+      case "investors": return <InvestorForm {...props} />
+      case "documents": return <DocumentForm {...props} properties={formOptions?.properties ?? []} />
     }
   }
 
@@ -389,6 +458,17 @@ export function SpravaClient({ initialProperties }: Props) {
                 totalPages={Math.ceil(tabStates[tab as EntityTab].total / PAGE_SIZE)}
                 totalCount={tabStates[tab as EntityTab].total}
                 onPageChange={handlePageChange}
+                rowClassName={tab === "tasks" ? (row) => {
+                  const status = row.status as string
+                  const dueDate = row.dueDate as string | null
+                  if (!dueDate || status === "DONE" || status === "CANCELLED") return ""
+                  const due = new Date(dueDate)
+                  const now = new Date()
+                  const daysUntil = (due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+                  if (daysUntil < 0) return "bg-red-500/8 border-l-2 border-l-red-500/40"
+                  if (daysUntil < 3) return "bg-amber-500/8 border-l-2 border-l-amber-500/40"
+                  return ""
+                } : undefined}
               />
             )}
           </TabsContent>

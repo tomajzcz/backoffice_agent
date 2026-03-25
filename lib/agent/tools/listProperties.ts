@@ -1,7 +1,7 @@
 import { tool } from "ai"
 import { z } from "zod"
 import { listPropertiesQuery } from "@/lib/db/queries/properties"
-import { PROPERTY_TYPE_LABELS as TYPE_LABELS, PROPERTY_STATUS_LABELS as STATUS_LABELS } from "@/lib/constants/labels"
+import { PROPERTY_TYPE_LABELS as TYPE_LABELS, PROPERTY_STATUS_LABELS as STATUS_LABELS, LIFECYCLE_STAGE_LABELS } from "@/lib/constants/labels"
 import type { ListPropertiesResult } from "@/types/agent"
 
 export const listPropertiesTool = tool({
@@ -12,6 +12,7 @@ export const listPropertiesTool = tool({
     district: z.string().optional().describe("Filtr podle čtvrti (např. Holešovice)"),
     type: z.enum(["BYT", "DUM", "POZEMEK", "KOMERCNI"]).optional().describe("Typ nemovitosti"),
     status: z.enum(["AVAILABLE", "IN_NEGOTIATION", "SOLD", "RENTED", "WITHDRAWN"]).optional().describe("Status nemovitosti"),
+    lifecycleStage: z.enum(["ACQUISITION", "IN_RENOVATION", "READY_FOR_SALE", "LISTED", "SOLD"]).optional().describe("Fáze životního cyklu"),
     priceMin: z.number().optional().describe("Minimální cena v CZK"),
     priceMax: z.number().optional().describe("Maximální cena v CZK"),
     areaMin: z.number().optional().describe("Minimální plocha v m²"),
@@ -40,6 +41,10 @@ export const listPropertiesTool = tool({
         price: Number(p.price),
         status: p.status,
         statusLabel: STATUS_LABELS[p.status] ?? p.status,
+        lifecycleStage: p.lifecycleStage,
+        lifecycleStageLabel: p.lifecycleStage
+          ? (LIFECYCLE_STAGE_LABELS[p.lifecycleStage] ?? p.lifecycleStage)
+          : null,
         areaM2: Number(p.areaM2),
         disposition: p.disposition,
         yearBuilt: p.yearBuilt,

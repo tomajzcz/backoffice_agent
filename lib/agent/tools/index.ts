@@ -33,6 +33,15 @@ import { updateDealTool } from "./updateDeal"
 import { listShowingsTool } from "./listShowings"
 import { createShowingTool } from "./createShowing"
 import { updateShowingTool } from "./updateShowing"
+// New operational tools
+import { queryPropertiesByLifecycleTool } from "./queryPropertiesByLifecycle"
+import { scanOverdueTasksTool } from "./scanOverdueTasks"
+import { scanOperationalHealthTool } from "./scanOperationalHealth"
+import { calculatePropertyProfitabilityTool } from "./calculatePropertyProfitability"
+import { getInvestorOverviewTool } from "./getInvestorOverview"
+import { getPropertyDocumentsTool } from "./getPropertyDocuments"
+import { scanMissingDocumentsTool } from "./scanMissingDocuments"
+import { analyzeNewListingsTool } from "./analyzeNewListings"
 
 export const agentTools = {
   queryNewClients: queryNewClientsTool,
@@ -70,6 +79,15 @@ export const agentTools = {
   listShowings: listShowingsTool,
   createShowing: createShowingTool,
   updateShowing: updateShowingTool,
+  // Operational tools
+  queryPropertiesByLifecycle: queryPropertiesByLifecycleTool,
+  scanOverdueTasks: scanOverdueTasksTool,
+  scanOperationalHealth: scanOperationalHealthTool,
+  calculatePropertyProfitability: calculatePropertyProfitabilityTool,
+  getInvestorOverview: getInvestorOverviewTool,
+  getPropertyDocuments: getPropertyDocumentsTool,
+  scanMissingDocuments: scanMissingDocumentsTool,
+  analyzeNewListings: analyzeNewListingsTool,
 } as const
 
 export type AgentToolName = keyof typeof agentTools

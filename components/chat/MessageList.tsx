@@ -31,7 +31,7 @@ export function MessageList({ messages, isLoading }: Props) {
               Back Office Agent
             </p>
             <p className="text-xs text-muted-foreground/60 max-w-[200px] leading-relaxed">
-              Zeptej se mě na klienty, leady, nemovitosti nebo výsledky firmy.
+              Zeptej se mě na stav nemovitostí, úkoly, investory, ziskovost nebo operativní audit.
             </p>
           </div>
         </div>

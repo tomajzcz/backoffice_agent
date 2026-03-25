@@ -14,6 +14,8 @@ import { runScraper, type JobConfig } from "@/lib/scraper"
 import { filterNewListings } from "@/lib/scraper/dedup"
 import { sendMonitoringEmail } from "@/lib/scraper/notify"
 import { listCallLogs } from "@/lib/db/queries/call-logs"
+
+type CallLogItem = Awaited<ReturnType<typeof listCallLogs>>["items"][number]
 import {
   getTodaysScheduledShowings,
   getExistingCallLogsForDate,
@@ -160,7 +162,7 @@ export async function listCallLogsAction(filters: {
   const { items, total } = await listCallLogs(filters)
 
   return {
-    items: items.map((c) => ({
+    items: items.map((c: CallLogItem) => ({
       id: c.id,
       callDate: c.callDate.toISOString().slice(0, 10),
       clientName: c.client.name,

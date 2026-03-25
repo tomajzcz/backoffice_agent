@@ -1,7 +1,9 @@
 "use client"
 
 import { Send, Loader2 } from "lucide-react"
-import { type FormEvent, type KeyboardEvent } from "react"
+import { type FormEvent, type KeyboardEvent, useCallback, useRef } from "react"
+import { useSpeechRecognition } from "@/hooks/useSpeechRecognition"
+import { MicButton } from "./MicButton"
 
 interface Props {
   input: string
@@ -11,10 +13,48 @@ interface Props {
 }
 
 export function ChatInput({ input, isLoading, onInputChange, onSubmit }: Props) {
+  const baseInputRef = useRef("")
+
+  const handleInterim = useCallback(
+    (interim: string) => {
+      const base = baseInputRef.current
+      const separator = base && !base.endsWith(" ") ? " " : ""
+      onInputChange(base + separator + interim)
+    },
+    [onInputChange]
+  )
+
+  const handleFinal = useCallback(
+    (final: string) => {
+      const base = baseInputRef.current
+      const separator = base && !base.endsWith(" ") ? " " : ""
+      const newBase = base + separator + final
+      baseInputRef.current = newBase
+      onInputChange(newBase)
+    },
+    [onInputChange]
+  )
+
+  const { status, isListening, isSupported, toggleListening, stopListening } =
+    useSpeechRecognition({
+      lang: "cs-CZ",
+      onInterim: handleInterim,
+      onFinal: handleFinal,
+    })
+
+  const handleToggleListening = useCallback(() => {
+    if (!isListening) {
+      // Snapshot current input as the base before listening starts
+      baseInputRef.current = input
+    }
+    toggleListening()
+  }, [isListening, input, toggleListening])
+
   function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
       if (input.trim() && !isLoading) {
+        if (isListening) stopListening()
         onSubmit(e as unknown as FormEvent)
       }
     }
@@ -41,6 +81,13 @@ export function ChatInput({ input, isLoading, onInputChange, onSubmit }: Props) 
             el.style.height = `${Math.min(el.scrollHeight, 128)}px`
           }}
         />
+        {isSupported && (
+          <MicButton
+            status={status}
+            onClick={handleToggleListening}
+            disabled={isLoading}
+          />
+        )}
         <button
           type="submit"
           disabled={isLoading || !input.trim()}
@@ -54,7 +101,7 @@ export function ChatInput({ input, isLoading, onInputChange, onSubmit }: Props) 
         </button>
       </div>
       <p className="text-center text-[10px] text-muted-foreground/30 mt-1.5">
-        Enter odeslat · Shift+Enter nový řádek
+        Enter odeslat · Shift+Enter nový řádek{isSupported ? " · Mikrofon diktovat" : ""}
       </p>
     </form>
   )

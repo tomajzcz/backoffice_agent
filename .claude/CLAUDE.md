@@ -1,323 +1,113 @@
-# Back Office Operations Agent
+# CLAUDE.md
 
-## Project Context
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Soutěžní projekt pro výběrové řízení s Vojtou Žižkou (pozice "AI génius"). Cílem je postavit **Back Office Operations Agenta** pro fiktivní realitní firmu a nasadit ho na Vercel. Porotě bude odevzdáno URL na nasazené UI + krátké demo video.
+## Project Overview
 
-**Pepa** = fiktivní back office manager, pro jehož práci je agent určen. Zadání pochází od Vojty Žižky.
+Back Office Operations Agent for a fictional real estate firm in Prague. AI-powered chat UI that helps "Pepa" (back office manager) with analytics, data quality scanning, report generation, Google Calendar/Gmail integration, and market monitoring. Competition project for a job application — the deliverable is a deployed Vercel URL + demo video.
 
----
+Language context: UI and agent responses are in **Czech**. System prompt, labels, and seed data use Czech text.
 
-## Cíl projektu
+## Commands
 
-Postavit AI agenta s chatovým UI, který umí:
-
-1. Analytické dotazy nad daty (klienti Q1, leady vs. prodeje 6M, grafy)
-2. Operativní scan dat (nemovitosti s chybějící rekonstrukcí)
-3. Generování výstupů (weekly report, 3-slide prezentace)
-4. Komunikaci (draft emailu s termínem prohlídky z Google Calendar)
-5. Plánované monitoring tasky (realitní servery Praha Holešovice každé ráno)
-
----
-
-## Architektura
-
-```
-┌─────────────────────────────────────────────┐
-│           Next.js App (Vercel)              │
-│  ┌──────────────┐  ┌──────────────────────┐ │
-│  │   Chat UI    │  │  Results Panel       │ │
-│  │  (streaming) │  │  tabs: Answer/Chart  │ │
-│  │              │  │  /Draft/Report/Tasks │ │
-│  └──────┬───────┘  └──────────────────────┘ │
-│         │                                   │
-│  ┌──────▼──────────────────────────────┐    │
-│  │        Agent Orchestrator           │    │
-│  │     (Vercel AI SDK + tool calls)    │    │
-│  └──────┬──────────────────────────────┘    │
-└─────────┼───────────────────────────────────┘
-          │ tools
-    ┌─────▼──────────────────────────────────┐
-    │              Tool Layer                │
-    │  analytics_query | data_quality_scan   │
-    │  calendar_availability | gmail_draft   │
-    │  report_generator | pptx_export        │
-    │  scheduled_jobs_manager                │
-    └──────┬─────────────────┬───────────────┘
-           │                 │
-    ┌──────▼──────┐   ┌──────▼──────────┐
-    │  Postgres   │   │  n8n (webhooks) │
-    │  (Neon)     │   │  schedulery     │
-    └─────────────┘   └─────────────────┘
-           │
-    ┌──────▼──────────────────────────────┐
-    │  Google APIs (Calendar + Gmail)     │
-    └─────────────────────────────────────┘
+```bash
+npm run dev              # Start dev server (Next.js)
+npm run build            # Production build
+npm run lint             # ESLint
+npm run db:generate      # Prisma generate client
+npm run db:migrate       # Prisma migrate dev
+npm run db:seed          # Seed database (tsx prisma/seed.ts)
+npm run db:reset         # Reset DB + re-seed (destructive)
+npm run db:studio        # Prisma Studio GUI
 ```
 
----
+After changing `prisma/schema.prisma`, run `db:migrate` then `db:generate`.
 
-## Tech Stack
+## Architecture
 
-| Vrstva     | Technologie                                                        |
-| ---------- | ------------------------------------------------------------------ |
-| Frontend   | Next.js 15 (App Router), TypeScript, Tailwind CSS, shadcn/ui       |
-| AI         | Vercel AI SDK (`ai` package), claude-sonnet-4-6 model              |
-| Charts     | Recharts nebo ECharts (strukturovaná data z toolů, ne LLM obrázky) |
-| Backend    | Next.js API routes / server actions                                |
-| DB         | Postgres na Neon (nebo Supabase), Prisma nebo Drizzle ORM          |
-| Embeddings | pgvector (volitelné, pro doc search)                               |
-| Workflow   | n8n (self-hosted nebo Render/Railway)                              |
-| Email/Cal  | Google Gmail API + Google Calendar API                             |
-| PPTX       | PptxGenJS                                                          |
-| Hosting    | Vercel (frontend + API)                                            |
+**Next.js 15 App Router** with split-screen layout:
+- Left panel: Chat (streaming via Vercel AI SDK + Anthropic claude-sonnet-4-6)
+- Right panel: Result tabs (Answer, Chart, Data, Report, Email, Logs) — auto-switches based on tool type
 
----
+**Request flow**: User message → `POST /api/chat` → `streamText()` with 35 tools (max 10 steps per turn) → SSE response → frontend renders tool results in appropriate tab.
 
-## Databázové schéma (hlavní tabulky)
+**Key architectural decisions**:
+- Charts rendered by Recharts from structured `chartData` arrays returned by tools — never LLM-generated images
+- Gmail creates drafts only (never auto-sends) for safety
+- Message history is trimmed (base64 stripped, reports truncated) to manage context window across turns
+- Tools return strongly-typed results matching `AgentToolResult` union in `types/agent.ts`
+- n8n is used only for scheduler/workflow, not as the main UI
 
-```sql
--- Klienti
-clients (id, name, email, phone, acquisition_source, created_at, segment)
+## Key Paths
 
--- Leady
-leads (id, name, email, phone, source, status, property_interest, created_at, converted_at)
+| Area | Path |
+|------|------|
+| Chat streaming endpoint | `app/api/chat/route.ts` |
+| All 35 tool definitions | `lib/agent/tools/` (each tool is its own file, re-exported from `index.ts`) |
+| System prompt (Czech) | `lib/agent/prompts.ts` |
+| DB schema (11 models, 8 enums) | `prisma/schema.prisma` |
+| DB query functions | `lib/db/queries/` (one file per entity) |
+| Seed script (faker) | `prisma/seed.ts` |
+| Tool result types (40+) | `types/agent.ts` |
+| Chart components | `components/charts/` |
+| Results panel + tabs | `components/results/ResultsPanel.tsx` |
+| Google OAuth setup | `lib/google/auth.ts` |
+| Czech enum labels & colors | `lib/constants/labels.ts` |
+| PPTX generation | `lib/export/pptx.ts` |
+| Web scraping (sreality, bezrealitky) | `lib/scraper/` |
+| Data management UI | `app/sprava/` |
+| Monitoring dashboard UI | `app/dashboard/` |
+| Vercel cron config | `vercel.json` (monitoring at 5 AM weekdays) |
 
--- Nemovitosti
-properties (id, address, district, type, price, status, area_m2,
-            year_built, last_renovation_year, renovation_notes,
-            owner_id, created_at)
+## Adding a New Tool
 
--- Obchody
-deals (id, property_id, client_id, status, value, closed_at, created_at)
+1. Create `lib/agent/tools/myNewTool.ts` with Zod schema for parameters and a typed result
+2. Define the tool using Vercel AI SDK's `tool()` function with `parameters` (Zod) and `execute` async function
+3. Add result type to `types/agent.ts` and include in `AgentToolResult` union
+4. Export from `lib/agent/tools/index.ts`
+5. If the tool returns chart data, add/reuse a chart component in `components/charts/`
+6. Update `components/results/ResultsPanel.tsx` tab switching logic if new result type needs special rendering
+7. Update system prompt in `lib/agent/prompts.ts` if the agent needs guidance on when/how to use the tool
 
--- Prohlídky
-showings (id, property_id, client_id, scheduled_at, status, notes)
+## Tool Categories (35 total)
 
--- Týdenní KPI snapshoty
-weekly_reports (id, week_start, new_leads, new_clients, properties_listed,
-                deals_closed, revenue, created_at)
+- **Analytics** (5): queryNewClients, queryLeadsSalesTimeline, queryWeeklyKPIs, scanMissingRenovationData, generateReport
+- **Google** (6): getCalendarAvailability, createCalendarEvent, updateCalendarEvent, deleteCalendarEvent, listCalendarEvents, createGmailDraft
+- **Export** (2): generatePresentation (PPTX, 1–10 slides from pool of 10), sendPresentationEmail
+- **Monitoring** (4): listScheduledJobs, createMonitoringJob, triggerMonitoringJob, getMonitoringResults
+- **CRUD** (16): list/create/update for Properties, Clients, Leads, Deals, Showings
+- **Other** (2): createAgentTask, getPropertyDetails
 
--- Tasky vygenerované agentem
-agent_tasks (id, title, description, status, priority, due_date,
-             source_query, created_at)
+## Database
 
--- Scheduled monitoring joby
-scheduled_jobs (id, name, description, cron_expr, last_run_at,
-                next_run_at, status, config_json)
+PostgreSQL via Prisma ORM. Path alias `@/*` maps to project root.
 
--- Výsledky monitoringu
-monitoring_results (id, job_id, source, title, url, price, district,
-                    disposition, found_at, is_new)
+Seed data volumes: 45 clients, 150 leads, 55 properties (15 intentionally missing renovation data), 22 deals, 40 showings, 18 weekly reports, 2 scheduled monitoring jobs.
 
--- Run logy agenta
-agent_runs (id, session_id, user_query, tools_called_json,
-            output_summary, created_at)
-```
+Prisma client singleton: `lib/db/prisma.ts`.
 
----
-
-## Agent Tools (seznam)
-
-Každý tool je Next.js server-side funkce volaná přes Vercel AI SDK tool calling:
-
-### Datové / analytické tooly
-
-- `queryNewClients(quarter, year)` → clients za kvartál + acquisition_source breakdown
-- `queryLeadsSalesTimeline(months)` → měsíční agregace leads vs. deals
-- `queryWeeklyKPIs(weeksBack)` → weekly_reports za posledních N týdnů
-- `scanMissingRenovationData()` → properties kde chybí renovation data
-
-### Komunikační tooly
-
-- `getCalendarAvailability(dateRangeStart, dateRangeEnd)` → Google Calendar free slots
-- `createGmailDraft(to, subject, body)` → uloží draft do Gmailu
-- `getPropertyDetails(propertyId)` → detail nemovitosti pro kontext emailu
-
-### Generování výstupů
-
-- `generateReport(type, data)` → Markdown/HTML report
-- `generatePresentation(slides[])` → PptxGenJS výstup, vrátí download link
-- `exportTableToCSV(data)` → CSV export
-
-### Workflow / monitoring
-
-- `createAgentTask(title, description, priority, dueDate)` → uloží task
-- `listScheduledJobs()` → přehled monitoring jobů
-- `triggerMonitoringJob(jobId)` → spustí okamžitě přes n8n webhook
-- `getMonitoringResults(jobId, days)` → výsledky monitoring jobu
-
----
-
-## Struktura projektu (složky)
+## Environment Variables
 
 ```
-backoffice_agent/
-├── app/
-│   ├── page.tsx                    # hlavní chat UI
-│   ├── layout.tsx
-│   ├── api/
-│   │   ├── chat/route.ts           # AI SDK streaming endpoint
-│   │   ├── n8n-webhook/route.ts    # příjem výsledků z n8n
-│   │   └── export/
-│   │       ├── pptx/route.ts
-│   │       └── csv/route.ts
-│   ├── dashboard/page.tsx          # scheduled jobs + monitoring
-│   └── tasks/page.tsx              # agent task list
-├── components/
-│   ├── chat/
-│   │   ├── ChatPanel.tsx
-│   │   ├── MessageBubble.tsx
-│   │   └── ToolCallIndicator.tsx
-│   ├── results/
-│   │   ├── ResultsPanel.tsx        # tabs: Answer/Chart/Draft/Report/Tasks
-│   │   ├── ChartView.tsx
-│   │   ├── TableView.tsx
-│   │   ├── EmailDraftView.tsx
-│   │   └── ReportView.tsx
-│   └── ui/                         # shadcn komponenty
-├── lib/
-│   ├── agent/
-│   │   ├── tools.ts                # definice všech toolů
-│   │   ├── prompts.ts              # system prompt agenta
-│   │   └── schemas.ts              # Zod schémata pro tool params
-│   ├── db/
-│   │   ├── schema.ts               # Drizzle/Prisma schema
-│   │   ├── queries.ts              # DB query funkce
-│   │   └── seed.ts                 # seed script pro demo data
-│   ├── google/
-│   │   ├── calendar.ts             # Google Calendar API wrapper
-│   │   └── gmail.ts                # Gmail API wrapper
-│   ├── export/
-│   │   ├── pptx.ts                 # PptxGenJS wrapper
-│   │   └── report.ts               # Markdown/HTML report generator
-│   └── n8n/
-│       └── webhooks.ts             # n8n webhook volání
-├── prisma/                         # nebo drizzle/
-│   └── schema.prisma
-├── scripts/
-│   └── seed-db.ts                  # generování demo dat
-├── n8n-workflows/                  # exportované n8n workflow JSONy
-│   ├── morning-monitoring.json
-│   └── weekly-digest.json
-└── CLAUDE.md
-```
-
----
-
-## System prompt agenta
-
-```
-Jsi Back Office Operations Agent pro realitní firmu. Pomáháš Pepovi, back office managerovi, s:
-- analýzou dat o klientech, leadech, nemovitostech a obchodech
-- hledáním provozních mezer a chybějících dat
-- přípravou komunikace (e-maily, drafty)
-- generováním reportů a prezentací
-- plánovaným monitoringem realitního trhu
-
-Vždy používej dostupné tooly pro práci s reálnými daty. Nikdy nevymýšlej čísla.
-Na dotazy odpovídej česky, strukturovaně. Pokud generuješ graf, vrať strukturovaná data pro frontend renderer.
-Pokud navrhneš úkol nebo follow-up akci, nabídni jeho uložení přes createAgentTask.
-```
-
----
-
-## Demo data (seed)
-
-Seed skript vygeneruje věrohodná data:
-
-- **150 leadů** (leden 2025 – březen 2026, zdroje: sreality, bezrealitky, doporučení, web, inzerce)
-- **45 klientů** (konvertovaní z leadů)
-- **55 nemovitostí** (Praha + okolí, různé dispozice, ~15 záměrně bez renovation dat)
-- **22 dealů** (closed i in-progress)
-- **40 prohlídek**
-- **18 weekly_report snapshotů** (posledních 18 týdnů)
-- **2 scheduled monitoring joby** (Praha Holešovice, Praha Žižkov)
-- **5–10 monitoring výsledků** simulující ranní digest
-
----
-
-## Prioritní pořadí buildování
-
-### Den 1 – Základ
-
-1. Next.js projekt + Vercel deploy
-2. DB schema + seed data
-3. Chat UI (shadcn, streaming)
-4. Základní tool: `queryNewClients` + výstup v tabulce
-5. CI: každý push → auto-deploy na Vercel
-
-### Den 2 – Analytics + Operations
-
-6. `queryLeadsSalesTimeline` + line chart (Recharts)
-7. `scanMissingRenovationData` + task list výstup
-8. `generateReport` + weekly summary
-9. `queryWeeklyKPIs`
-
-### Den 3 – Komunikace + Monitoring
-
-10. Google Calendar API + `getCalendarAvailability`
-11. Gmail API + `createGmailDraft`
-12. Email draft UI preview + „Save draft" CTA
-13. n8n workflow pro ranní monitoring
-14. Scheduled jobs page v UI
-
-### Den 4 – Export + Polish + Video
-
-15. PptxGenJS prezentace
-16. PDF/CSV export
-17. Runs log (které tooly agent použil)
-18. Approval flow pro email (schválení před uložením)
-19. „Explain how I got this answer" feature
-20. Demo video
-
----
-
-## Klíčové rozhodnutí a důvody
-
-| Rozhodnutí                                         | Důvod                                              |
-| -------------------------------------------------- | -------------------------------------------------- |
-| Graf renderuje frontend z dat, ne LLM jako obrázek | Přesnější, rychlejší, product-grade                |
-| n8n jen pro scheduler/workflow, ne jako hlavní UI  | UI/product experience musí být vlastní appka       |
-| Demo draft emailu, neodesílat rovnou               | Bezpečnější a profesionálnější pro demo            |
-| Strukturovaná data z toolů → Zod schémata          | Type safety + lepší error handling                 |
-| pgvector jen pokud zbyde čas                       | Risk/reward: embeddings nejsou v zadání explicitně |
-| Seed data věrohodná a relačně konzistentní         | Grafy a reporty musí vypadat jako reálná firma     |
-
----
-
-## Prostředí a secrets
-
-Potřebné env proměnné (`.env.local`):
-
-```
-DATABASE_URL=
+DATABASE_URL=           # Postgres (Neon)
+DIRECT_URL=             # Direct DB connection (migrations)
 ANTHROPIC_API_KEY=
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 GOOGLE_REFRESH_TOKEN=
-N8N_WEBHOOK_SECRET=
-N8N_BASE_URL=
+N8N_BASE_URL=           # Optional, for monitoring webhooks
+N8N_WEBHOOK_SECRET=     # Optional
 ```
-
----
 
 ## Deployment
 
-- **Frontend + API**: Vercel (automatický deploy z main branch)
-- **DB**: Neon (free tier stačí pro demo)
-- **n8n**: Railway nebo Render (nebo lokálně pro demo)
-- **Env vars**: nastavit v Vercel dashboard
+Vercel auto-deploys from `main` branch. DB on Neon. Vercel cron triggers `/api/cron/monitoring` at 5 AM Mon–Fri.
 
----
+## Success Criteria
 
-## Kritéria úspěchu (co porota hodnotí)
-
-- [ ] Funguje end-to-end (reálné tooly, ne fake odpovědi)
-- [ ] Jasný business leverage (Pepa ušetří hodiny práce)
-- [ ] UI působí jako produkt (ne chatbot demo)
-- [ ] Grafy a reporty jsou skutečné výstupy
-- [ ] Workflow a schedule jsou skutečně zapojené (n8n)
-- [ ] Google integrace (Calendar + Gmail) funkční
-- [ ] Export prezentace funguje
-- [ ] Demo video je přesvědčivé (problém → řešení → live demo → architektura)
+- End-to-end functionality with real tools (no fake responses)
+- UI feels like a product, not a chatbot demo
+- Charts and reports are real outputs from structured data
+- Google integrations (Calendar + Gmail) working
+- PPTX export functional
+- Monitoring workflows connected via n8n

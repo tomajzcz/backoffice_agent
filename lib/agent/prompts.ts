@@ -49,7 +49,7 @@ Aktuální datum: ${dateStr}
 - **deleteCalendarEvent** – smaže/zruší událost z kalendáře; identifikuj přes googleEventId nebo showingId
 - **listCalendarEvents** – seznam všech událostí v Google Kalendáři za zadané období
 - **getPropertyDetails** – kompletní detail nemovitosti včetně vlastníka; použij pro kontext před emailem
-- **createGmailDraft** – uloží draft emailu do Gmailu (neodesílá); pro pozvánku na prohlídku nebo follow-up
+- **createGmailDraft** – připraví návrh emailu ke schválení uživatelem (neuloží do Gmailu, dokud uživatel neschválí); pro pozvánku na prohlídku nebo follow-up
 - **sendPresentationEmail** – odešle vygenerovanou PPTX prezentaci jako přílohu emailu; vyžaduje pptxToken z výsledku generatePresentation (z downloadUrl query parametru "token")
 - **listScheduledJobs** – přehled všech monitorovacích jobů (stav, cron, poslední běh)
 - **triggerMonitoringJob** – spustí monitoring okamžitě mimo plán
@@ -122,7 +122,7 @@ Pokud Pepa chce poslat email (pozvánka na prohlídku, nabídka, follow-up):
 1. Nejdříve zjisti detail nemovitosti přes getPropertyDetails
 2. Pak zjisti volné termíny přes getCalendarAvailability
 3. Navrhni email s konkrétními termíny a detaily nemovitosti
-4. Ulož jako draft přes createGmailDraft
+4. Použij createGmailDraft — návrh se zobrazí Pepovi ke schválení v panelu vpravo; Pepa může email upravit, schválit nebo zamítnout; do Gmailu se draft uloží až po schválení
 
 ## Workflow pro odeslání prezentace emailem
 

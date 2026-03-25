@@ -4,7 +4,7 @@ import { useRef, useMemo } from "react"
 import { useChat } from "ai/react"
 import { ChatPanel } from "@/components/chat/ChatPanel"
 import { ResultsPanel } from "@/components/results/ResultsPanel"
-import type { AgentToolResult } from "@/types/agent"
+import type { AgentToolResult, ExplainabilityData } from "@/types/agent"
 
 export default function Home() {
   // Stable session ID — useRef to avoid re-generation on re-render
@@ -12,7 +12,7 @@ export default function Home() {
     typeof crypto !== "undefined" ? crypto.randomUUID() : Math.random().toString(36).slice(2)
   )
 
-  const { messages, input, isLoading, setInput, handleSubmit, handleInputChange, append, error } = useChat({
+  const { messages, input, isLoading, setInput, handleSubmit, handleInputChange, append, error, data } = useChat({
     api: "/api/chat",
     body: { sessionId: sessionId.current },
     onError: (err) => console.error("[useChat] error:", err),
@@ -35,6 +35,18 @@ export default function Home() {
     }
     return null
   }, [messages])
+
+  // Extract latest explainability annotation from stream data
+  const latestExplainability = useMemo((): ExplainabilityData | null => {
+    if (!data || data.length === 0) return null
+    for (let i = data.length - 1; i >= 0; i--) {
+      const d = data[i]
+      if (d && typeof d === "object" && !Array.isArray(d) && (d as Record<string, unknown>).type === "explainability") {
+        return d as unknown as ExplainabilityData
+      }
+    }
+    return null
+  }, [data])
 
   function handleInputChangeWrapper(value: string) {
     // Bridge between string-based setter from SuggestedPrompts and ai/react event-based handler
@@ -61,7 +73,7 @@ export default function Home() {
 
       {/* Right panel: Results */}
       <div className="flex-1 min-w-0 flex flex-col">
-        <ResultsPanel messages={messages} latestToolResult={latestToolResult} onAction={handleAction} isLoading={isLoading} />
+        <ResultsPanel messages={messages} latestToolResult={latestToolResult} latestExplainability={latestExplainability} onAction={handleAction} isLoading={isLoading} />
       </div>
     </main>
   )

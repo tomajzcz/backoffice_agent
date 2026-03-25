@@ -1,8 +1,9 @@
 "use client"
 
-import { Download, CheckCircle2, AlertCircle, ExternalLink, MapPin, Home, Clock } from "lucide-react"
+import { CheckCircle2, AlertCircle, ExternalLink, MapPin, Home, Clock } from "lucide-react"
 import { formatDate, formatCZK } from "@/lib/utils"
 import { ACQUISITION_SOURCE_LABELS as SOURCE_LABELS, CLIENT_SEGMENT_LABELS as SEGMENT_LABELS, STATUS_COLORS } from "@/lib/constants/labels"
+import { ExportButtons } from "./ExportButtons"
 import type { AgentToolResult } from "@/types/agent"
 
 interface Props {
@@ -22,33 +23,13 @@ export function DataTab({ result, onAction }: Props) {
   if (result.toolName === "queryNewClients") {
     const { clients, totalClients, period } = result
 
-    function downloadCSV() {
-      const header = "Jméno,Email,Telefon,Zdroj,Segment,Datum"
-      const rows = clients.map((c) =>
-        [c.name, c.email, c.phone ?? "", c.sourceLabel, c.segmentLabel, formatDate(c.createdAt)].join(",")
-      )
-      const csv = [header, ...rows].join("\n")
-      const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = `klienti-${period}.csv`
-      a.click()
-    }
-
     return (
       <div className="animate-fade-in">
         <div className="flex items-center justify-between mb-3">
           <p className="text-xs text-muted-foreground" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
             {totalClients} klientů · {period}
           </p>
-          <button
-            onClick={downloadCSV}
-            className="flex items-center gap-1.5 text-[11px] text-muted-foreground/60 hover:text-foreground transition-colors"
-          >
-            <Download className="w-3 h-3" />
-            CSV
-          </button>
+          <ExportButtons result={result} />
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
@@ -111,9 +92,12 @@ export function DataTab({ result, onAction }: Props) {
             </div>
           ))}
         </div>
-        <p className="text-xs text-muted-foreground/50 mb-3 font-mono">
-          Posledních {monthsBack} měsíců
-        </p>
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs text-muted-foreground/50 font-mono">
+            Posledních {monthsBack} měsíců
+          </p>
+          <ExportButtons result={result} />
+        </div>
         <table className="w-full text-xs">
           <thead>
             <tr>
@@ -172,6 +156,7 @@ export function DataTab({ result, onAction }: Props) {
               Uložit všechny jako úkoly
             </button>
           )}
+          <ExportButtons result={result} />
         </div>
 
         {/* District breakdown */}
@@ -294,7 +279,10 @@ export function DataTab({ result, onAction }: Props) {
 
     return (
       <div className="animate-fade-in">
-        <p className="text-xs text-muted-foreground/50 mb-3 font-mono">Posledních {weeksBack} týdnů</p>
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs text-muted-foreground/50 font-mono">Posledních {weeksBack} týdnů</p>
+          <ExportButtons result={result} />
+        </div>
 
         {/* Totals + trends */}
         <div className="grid grid-cols-2 gap-2 mb-4">
@@ -525,6 +513,7 @@ export function DataTab({ result, onAction }: Props) {
           <p className="text-xs text-muted-foreground" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
             {result.jobName} · {result.totalResults} výsledků · {result.newResults} nových
           </p>
+          <ExportButtons result={result} />
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
@@ -584,33 +573,13 @@ export function DataTab({ result, onAction }: Props) {
   if (result.toolName === "listProperties") {
     const { properties, totalCount, limit, offset, hasMore } = result
 
-    function downloadCSV() {
-      const header = "ID,Adresa,Čtvrť,Typ,Cena,Status,Plocha,Dispozice,Rok výst.,Vlastník"
-      const rows = properties.map((p) =>
-        [p.id, p.address, p.district, p.typeLabel, p.price, p.statusLabel, p.areaM2, p.disposition ?? "", p.yearBuilt ?? "", p.ownerName ?? ""].join(",")
-      )
-      const csv = [header, ...rows].join("\n")
-      const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = `nemovitosti.csv`
-      a.click()
-    }
-
     return (
       <div className="animate-fade-in">
         <div className="flex items-center justify-between mb-3">
           <p className="text-xs text-muted-foreground" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
             {totalCount} nemovitostí · zobrazeno {offset + 1}–{Math.min(offset + limit, totalCount)}
           </p>
-          <button
-            onClick={downloadCSV}
-            className="flex items-center gap-1.5 text-[11px] text-muted-foreground/60 hover:text-foreground transition-colors"
-          >
-            <Download className="w-3 h-3" />
-            CSV
-          </button>
+          <ExportButtons result={result} />
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
@@ -679,6 +648,7 @@ export function DataTab({ result, onAction }: Props) {
           <p className="text-xs text-muted-foreground" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
             {totalCount} klientů · zobrazeno {offset + 1}–{Math.min(offset + limit, totalCount)}
           </p>
+          <ExportButtons result={result} />
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
@@ -736,13 +706,13 @@ export function DataTab({ result, onAction }: Props) {
   if (result.toolName === "listLeads") {
     const { leads, totalCount, limit, offset, hasMore } = result
 
-
     return (
       <div className="animate-fade-in">
         <div className="flex items-center justify-between mb-3">
           <p className="text-xs text-muted-foreground" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
             {totalCount} leadů · zobrazeno {offset + 1}–{Math.min(offset + limit, totalCount)}
           </p>
+          <ExportButtons result={result} />
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
@@ -805,13 +775,13 @@ export function DataTab({ result, onAction }: Props) {
   if (result.toolName === "listDeals") {
     const { deals, totalCount, limit, offset, hasMore } = result
 
-
     return (
       <div className="animate-fade-in">
         <div className="flex items-center justify-between mb-3">
           <p className="text-xs text-muted-foreground" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
             {totalCount} obchodů · zobrazeno {offset + 1}–{Math.min(offset + limit, totalCount)}
           </p>
+          <ExportButtons result={result} />
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
@@ -869,13 +839,13 @@ export function DataTab({ result, onAction }: Props) {
   if (result.toolName === "listShowings") {
     const { showings, totalCount, limit, offset, hasMore } = result
 
-
     return (
       <div className="animate-fade-in">
         <div className="flex items-center justify-between mb-3">
           <p className="text-xs text-muted-foreground" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
             {totalCount} prohlídek · zobrazeno {offset + 1}–{Math.min(offset + limit, totalCount)}
           </p>
+          <ExportButtons result={result} />
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
@@ -1094,9 +1064,12 @@ export function DataTab({ result, onAction }: Props) {
 
     return (
       <div className="animate-fade-in">
-        <p className="text-xs text-muted-foreground mb-3" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-          {totalEvents} událostí · {dateRangeStart} – {dateRangeEnd}
-        </p>
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs text-muted-foreground" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+            {totalEvents} událostí · {dateRangeStart} – {dateRangeEnd}
+          </p>
+          <ExportButtons result={result} />
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>

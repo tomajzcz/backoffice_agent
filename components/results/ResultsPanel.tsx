@@ -11,16 +11,17 @@ import { ReportTab } from "./ReportTab"
 import { EmailDraftTab } from "./EmailDraftTab"
 import { MessageSquare, Table2, BarChart2, Activity, FileText, Mail } from "lucide-react"
 import type { Message } from "ai/react"
-import type { AgentToolResult } from "@/types/agent"
+import type { AgentToolResult, ExplainabilityData } from "@/types/agent"
 
 interface Props {
   messages: Message[]
   latestToolResult: AgentToolResult | null
+  latestExplainability?: ExplainabilityData | null
   onAction?: (prompt: string) => void
   isLoading?: boolean
 }
 
-export function ResultsPanel({ messages, latestToolResult, onAction, isLoading }: Props) {
+export function ResultsPanel({ messages, latestToolResult, latestExplainability, onAction, isLoading }: Props) {
   const [activeTab, setActiveTab] = useState("odpoved")
 
   // Auto-switch tab when new tool result arrives
@@ -29,7 +30,7 @@ export function ResultsPanel({ messages, latestToolResult, onAction, isLoading }
     const { toolName } = latestToolResult
     if (toolName === "generateReport" || toolName === "generatePresentation") {
       setActiveTab("zprava")
-    } else if (toolName === "createGmailDraft" || toolName === "sendPresentationEmail") {
+    } else if (toolName === "createGmailDraft" || toolName === "prepareEmailDraft" || toolName === "sendPresentationEmail") {
       setActiveTab("email")
     } else if (
       toolName === "createAgentTask" ||
@@ -101,6 +102,8 @@ export function ResultsPanel({ messages, latestToolResult, onAction, isLoading }
                 ? `${latestToolResult.totalFreeSlots} volných slotů · ${latestToolResult.dateRangeStart} – ${latestToolResult.dateRangeEnd}`
                 : latestToolResult.toolName === "getPropertyDetails"
                 ? `${latestToolResult.property.address} · ${latestToolResult.property.district}`
+                : latestToolResult.toolName === "prepareEmailDraft"
+                ? `Návrh: ${latestToolResult.subject}`
                 : latestToolResult.toolName === "createGmailDraft"
                 ? `Draft: ${latestToolResult.subject}`
                 : latestToolResult.toolName === "sendPresentationEmail"
@@ -197,7 +200,7 @@ export function ResultsPanel({ messages, latestToolResult, onAction, isLoading }
         <ScrollArea className="flex-1 h-[calc(100vh-11rem)]">
           <div className="px-4 py-4">
             <TabsContent value="odpoved">
-              <AnswerTab messages={messages} />
+              <AnswerTab messages={messages} explainability={latestExplainability} />
             </TabsContent>
             <TabsContent value="data">
               <DataTab result={latestToolResult} onAction={onAction} />
@@ -209,7 +212,7 @@ export function ResultsPanel({ messages, latestToolResult, onAction, isLoading }
               <ReportTab result={latestToolResult} isLoading={isLoading} />
             </TabsContent>
             <TabsContent value="email">
-              {latestToolResult?.toolName === "createGmailDraft" ? (
+              {latestToolResult?.toolName === "prepareEmailDraft" || latestToolResult?.toolName === "createGmailDraft" ? (
                 <EmailDraftTab result={latestToolResult} />
               ) : (
                 <div className="flex items-center justify-center h-40 text-muted-foreground/40 text-sm">

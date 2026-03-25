@@ -4,6 +4,7 @@ import { useState } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { Download, FileText, Mail, Send, CheckCircle2, X, Loader2 } from "lucide-react"
+import { ExportButtons } from "./ExportButtons"
 import type { AgentToolResult } from "@/types/agent"
 
 interface Props {
@@ -71,9 +72,12 @@ export function ReportTab({ result, isLoading }: Props) {
           <h3 className="text-sm font-semibold text-foreground/80" style={{ fontFamily: "Syne, sans-serif" }}>
             {result.title}
           </h3>
-          <span className="text-[10px] text-muted-foreground/40 font-mono">
-            {new Date(result.generatedAt).toLocaleDateString("cs-CZ")}
-          </span>
+          <div className="flex items-center gap-3">
+            <ExportButtons result={result} />
+            <span className="text-[10px] text-muted-foreground/40 font-mono">
+              {new Date(result.generatedAt).toLocaleDateString("cs-CZ")}
+            </span>
+          </div>
         </div>
         <div className="prose prose-sm prose-invert prose-agent max-w-none text-xs leading-relaxed">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{result.markdown}</ReactMarkdown>

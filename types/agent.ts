@@ -578,6 +578,37 @@ export type AgentToolResult =
   | ListShowingsResult
   | CreateShowingResult
   | UpdateShowingResult
+  | PrepareEmailDraftResult
+
+// ─── Email approval ──────────────────────────────────────────────────────────
+
+export interface PrepareEmailDraftResult {
+  toolName: "prepareEmailDraft"
+  to: string
+  subject: string
+  bodyHtml: string
+  bodyPreview: string
+  preparedAt: string
+  chartType: "none"
+}
+
+// ─── Explainability ─────────────────────────────────────────────────────────
+
+export interface ExplainabilityData {
+  type: "explainability"
+  turnId: string
+  toolsUsed: Array<{
+    toolName: string
+    toolLabel: string
+    params: Record<string, unknown>
+    durationMs?: number
+  }>
+  dataSources: string[]
+  recordCounts: Record<string, number>
+  filters: Record<string, string>
+  limitations: string[]
+  timestamp: string
+}
 
 // ─── Agent run log ────────────────────────────────────────────────────────────
 

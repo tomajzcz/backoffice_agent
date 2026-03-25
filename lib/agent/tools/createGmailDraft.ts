@@ -1,14 +1,13 @@
 import { tool } from "ai"
 import { z } from "zod"
-import { saveDraft } from "@/lib/google/gmail"
-import type { CreateGmailDraftResult } from "@/types/agent"
+import type { PrepareEmailDraftResult } from "@/types/agent"
 
 export const createGmailDraftTool = tool({
   description:
-    "Uloží draft emailu do Gmailu (neodesílá ho). " +
+    "Připraví návrh emailu ke schválení uživatelem (neodesílá ho a neukládá do Gmailu). " +
     "Použij pro přípravu komunikace s klienty — např. pozvánka na prohlídku, follow-up, nabídka. " +
     "Před použitím si zjisti detail nemovitosti (getPropertyDetails) a volné termíny (getCalendarAvailability) " +
-    "pro relevantní kontext emailu.",
+    "pro relevantní kontext emailu. Uživatel musí návrh schválit před uložením do Gmailu.",
   parameters: z.object({
     to: z.string().email().describe("Email příjemce"),
     subject: z.string().describe("Předmět emailu"),
@@ -16,17 +15,14 @@ export const createGmailDraftTool = tool({
       .string()
       .describe("Tělo emailu v HTML formátu. Použij <p>, <br>, <strong>, <ul>/<li> pro formátování."),
   }),
-  execute: async ({ to, subject, body }): Promise<CreateGmailDraftResult> => {
-    const result = await saveDraft(to, subject, body)
-
+  execute: async ({ to, subject, body }): Promise<PrepareEmailDraftResult> => {
     return {
-      toolName: "createGmailDraft",
-      draftId: result.draftId,
+      toolName: "prepareEmailDraft",
       to,
       subject,
-      bodyPreview: body.replace(/<[^>]*>/g, "").slice(0, 200),
       bodyHtml: body,
-      savedAt: new Date().toISOString(),
+      bodyPreview: body.replace(/<[^>]*>/g, "").slice(0, 200),
+      preparedAt: new Date().toISOString(),
       chartType: "none",
     }
   },

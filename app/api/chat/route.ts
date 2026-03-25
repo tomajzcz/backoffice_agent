@@ -1,9 +1,10 @@
-import { streamText } from "ai"
+import { streamText, StreamData } from "ai"
 import { anthropic } from "@ai-sdk/anthropic"
 import { NextRequest } from "next/server"
 import { agentTools } from "@/lib/agent/tools"
 import { getSystemPrompt } from "@/lib/agent/prompts"
 import { logAgentRun } from "@/lib/agent/run-logger"
+import { buildExplainability } from "@/lib/agent/explainability"
 import type { ToolCallLog } from "@/types/agent"
 
 // Critical: without this, Vercel cuts streaming at 10s
@@ -99,6 +100,8 @@ export async function POST(req: NextRequest) {
   const trimmedMessages = trimMessageHistory(messages)
 
   const toolCallLog: ToolCallLog[] = []
+  const recordCounts: Record<string, number> = {}
+  const streamData = new StreamData()
 
   const result = streamText({
     model: anthropic("claude-sonnet-4-6"),
@@ -107,7 +110,7 @@ export async function POST(req: NextRequest) {
     tools: agentTools,
     // Critical: without maxSteps, LLM issues tool calls but never responds with text
     maxSteps: 10,
-    onStepFinish: ({ toolCalls }) => {
+    onStepFinish: ({ toolCalls, toolResults }) => {
       for (const call of toolCalls ?? []) {
         toolCallLog.push({
           toolName: call.toolName,
@@ -115,8 +118,30 @@ export async function POST(req: NextRequest) {
           startedAt: Date.now(),
         })
       }
+      // Capture record counts from tool results for explainability
+      for (const res of toolResults ?? []) {
+        if (res && typeof res === "object") {
+          const r = res as Record<string, unknown>
+          const name = r.toolName as string | undefined
+          if (!name) continue
+          if (typeof r.totalCount === "number") recordCounts[name] = r.totalCount
+          if (typeof r.totalClients === "number") recordCounts[name] = r.totalClients
+          if (typeof r.totalLeads === "number") recordCounts[name] = r.totalLeads
+          if (typeof r.totalEvents === "number") recordCounts[name] = r.totalEvents
+          if (typeof r.totalFreeSlots === "number") recordCounts[name] = r.totalFreeSlots
+          if (typeof r.totalJobs === "number") recordCounts[name] = r.totalJobs
+          if (typeof r.totalResults === "number") recordCounts[name] = r.totalResults
+        }
+      }
     },
     onFinish: async ({ text }) => {
+      // Append explainability data if tools were called
+      if (toolCallLog.length > 0) {
+        const explainability = buildExplainability(toolCallLog, recordCounts)
+        streamData.appendMessageAnnotation(JSON.parse(JSON.stringify(explainability)))
+      }
+      streamData.close()
+
       const lastUserMessage = [...messages]
         .reverse()
         .find((m: { role: string }) => m.role === "user")
@@ -135,5 +160,5 @@ export async function POST(req: NextRequest) {
     },
   })
 
-  return result.toDataStreamResponse()
+  return result.toDataStreamResponse({ data: streamData })
 }

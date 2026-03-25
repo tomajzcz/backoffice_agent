@@ -40,12 +40,17 @@ export const createAgentTaskTool = tool({
       .int()
       .optional()
       .describe("ID obchodu, ke kterému se úkol váže"),
+    renovationId: z
+      .number()
+      .int()
+      .optional()
+      .describe("ID rekonstrukce, ke které se úkol váže"),
     sourceQuery: z
       .string()
       .optional()
       .describe("Původní dotaz, ze kterého úkol vznikl"),
   }),
-  execute: async ({ title, description, priority, dueDate, assignee, propertyId, dealId, sourceQuery }): Promise<CreateAgentTaskResult> => {
+  execute: async ({ title, description, priority, dueDate, assignee, propertyId, dealId, renovationId, sourceQuery }): Promise<CreateAgentTaskResult> => {
     const parsedDueDate = dueDate ? new Date(dueDate) : undefined
 
     const task = await createTask({
@@ -56,6 +61,7 @@ export const createAgentTaskTool = tool({
       assignee,
       propertyId,
       dealId,
+      renovationId,
       sourceQuery,
     })
 

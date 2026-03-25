@@ -986,6 +986,234 @@ async function seedDocuments() {
   console.log(`  ✓ Created ${count} documents (25 properties with incomplete/no docs)`)
 }
 
+// ─── Renovations ─────────────────────────────────────────────────────────────
+
+async function seedRenovations() {
+  console.log("Seeding renovations...")
+
+  const now = new Date()
+
+  // Find properties in IN_RENOVATION lifecycle stage
+  const renovationProperties = await prisma.property.findMany({
+    where: { lifecycleStage: "IN_RENOVATION" },
+    select: { id: true, address: true },
+    take: 5,
+    orderBy: { id: "asc" },
+  })
+
+  if (renovationProperties.length === 0) {
+    console.log("  ⚠ No IN_RENOVATION properties found, skipping renovations")
+    return
+  }
+
+  type RenovationSeed = {
+    propertyId: number
+    phase: "PLANNING" | "DEMOLITION" | "ROUGH_WORK" | "INSTALLATIONS" | "SURFACES" | "FINISHING" | "READY_FOR_HANDOVER" | "COMPLETED" | "ON_HOLD"
+    status: "ACTIVE" | "COMPLETED" | "ON_HOLD"
+    startedAt: Date
+    plannedEndAt: Date | null
+    isDelayed: boolean
+    nextStep: string | null
+    blockers: string | null
+    ownerName: string | null
+    contractorName: string | null
+    budgetPlanned: number | null
+    budgetActual: number | null
+    notes: string | null
+  }
+
+  const renovationSeeds: RenovationSeed[] = [
+    {
+      propertyId: renovationProperties[0].id,
+      phase: "DEMOLITION",
+      status: "ACTIVE",
+      startedAt: addDays(now, -45),
+      plannedEndAt: addDays(now, -20),
+      isDelayed: true,
+      nextStep: null,
+      blockers: "Stavební povolení čeká na schválení magistrátu",
+      ownerName: "Pepa Novák",
+      contractorName: null,
+      budgetPlanned: 850000,
+      budgetActual: 320000,
+      notes: "Čekáme na vyjádření stavebního úřadu. Bourací práce pozastaveny.",
+    },
+    ...(renovationProperties.length > 1 ? [{
+      propertyId: renovationProperties[1].id,
+      phase: "INSTALLATIONS" as const,
+      status: "ACTIVE" as const,
+      startedAt: addDays(now, -30),
+      plannedEndAt: addDays(now, 15),
+      isDelayed: false,
+      nextStep: "Elektroinstalace patro 2",
+      blockers: null,
+      ownerName: "Pepa Novák",
+      contractorName: "StavbyPraha s.r.o.",
+      budgetPlanned: 1200000,
+      budgetActual: 680000,
+      notes: "Postup dle plánu. SDK příčky hotové.",
+    }] : []),
+    ...(renovationProperties.length > 2 ? [{
+      propertyId: renovationProperties[2].id,
+      phase: "SURFACES" as const,
+      status: "ACTIVE" as const,
+      startedAt: addDays(now, -60),
+      plannedEndAt: addDays(now, 5),
+      isDelayed: false,
+      nextStep: "Obklady koupelna",
+      blockers: null,
+      ownerName: "Martin Dvořák",
+      contractorName: "RealReko a.s.",
+      budgetPlanned: 950000,
+      budgetActual: 1120000,
+      notes: "Rozpočet přečerpán kvůli změně materiálu podlah na vinyl.",
+    }] : []),
+    ...(renovationProperties.length > 3 ? [{
+      propertyId: renovationProperties[3].id,
+      phase: "PLANNING" as const,
+      status: "ACTIVE" as const,
+      startedAt: addDays(now, -5),
+      plannedEndAt: addDays(now, 90),
+      isDelayed: false,
+      nextStep: "Vybrat dodavatele a domluvit harmonogram",
+      blockers: null,
+      ownerName: "Pepa Novák",
+      contractorName: null,
+      budgetPlanned: 1500000,
+      budgetActual: null,
+      notes: null,
+    }] : []),
+    ...(renovationProperties.length > 4 ? [{
+      propertyId: renovationProperties[4].id,
+      phase: "FINISHING" as const,
+      status: "ACTIVE" as const,
+      startedAt: addDays(now, -90),
+      plannedEndAt: addDays(now, 10),
+      isDelayed: false,
+      nextStep: "Montáž kuchyňské linky a spotřebičů",
+      blockers: null,
+      ownerName: "Pepa Novák",
+      contractorName: "Bytový Flip CZ s.r.o.",
+      budgetPlanned: 1100000,
+      budgetActual: 980000,
+      notes: "Finální fáze. Elektro a vodo revize objednány na příští týden.",
+    }] : []),
+  ]
+
+  const createdRenovations: Array<{ id: number; propertyId: number }> = []
+
+  for (const seed of renovationSeeds) {
+    const renovation = await prisma.renovation.create({
+      data: seed,
+    })
+    createdRenovations.push({ id: renovation.id, propertyId: renovation.propertyId })
+  }
+
+  // Create tasks linked to renovations
+  const renovationTasks = [
+    // Overdue tasks for the delayed renovation (index 0)
+    ...(createdRenovations.length > 0 ? [
+      {
+        title: "Zajistit stavební povolení",
+        description: "Kontaktovat stavební úřad a urgovat schválení",
+        status: "OPEN" as const,
+        priority: "URGENT" as const,
+        dueDate: addDays(now, -10),
+        assignee: "Pepa",
+        propertyId: createdRenovations[0].propertyId,
+        renovationId: createdRenovations[0].id,
+      },
+      {
+        title: "Vybrat nového dodavatele bourání",
+        description: "Oslovit min. 3 firmy na bourací práce",
+        status: "OPEN" as const,
+        priority: "HIGH" as const,
+        dueDate: addDays(now, -5),
+        assignee: "Pepa",
+        propertyId: createdRenovations[0].propertyId,
+        renovationId: createdRenovations[0].id,
+      },
+    ] : []),
+    // Tasks for installations renovation (index 1)
+    ...(createdRenovations.length > 1 ? [
+      {
+        title: "Objednat elektroinstalační materiál",
+        description: null,
+        status: "IN_PROGRESS" as const,
+        priority: "MEDIUM" as const,
+        dueDate: addDays(now, 3),
+        assignee: "Martin",
+        propertyId: createdRenovations[1].propertyId,
+        renovationId: createdRenovations[1].id,
+      },
+    ] : []),
+    // Tasks for surfaces renovation (index 2) - one overdue
+    ...(createdRenovations.length > 2 ? [
+      {
+        title: "Kontrola kvality obkladů",
+        description: "Zkontrolovat dodané obklady vs. objednávka",
+        status: "OPEN" as const,
+        priority: "HIGH" as const,
+        dueDate: addDays(now, -2),
+        assignee: "Martin",
+        propertyId: createdRenovations[2].propertyId,
+        renovationId: createdRenovations[2].id,
+      },
+      {
+        title: "Doobjednat vinylové podlahy",
+        description: null,
+        status: "DONE" as const,
+        priority: "MEDIUM" as const,
+        dueDate: addDays(now, -15),
+        assignee: "Martin",
+        propertyId: createdRenovations[2].propertyId,
+        renovationId: createdRenovations[2].id,
+      },
+    ] : []),
+    // Tasks for finishing renovation (index 4)
+    ...(createdRenovations.length > 4 ? [
+      {
+        title: "Objednat revizi elektro",
+        description: null,
+        status: "OPEN" as const,
+        priority: "MEDIUM" as const,
+        dueDate: addDays(now, 5),
+        assignee: "Pepa",
+        propertyId: createdRenovations[4].propertyId,
+        renovationId: createdRenovations[4].id,
+      },
+      {
+        title: "Montáž kuchyňské linky",
+        description: "IKEA kuchyně - montáž + zapojení spotřebičů",
+        status: "IN_PROGRESS" as const,
+        priority: "HIGH" as const,
+        dueDate: addDays(now, 7),
+        assignee: "Bytový Flip CZ",
+        propertyId: createdRenovations[4].propertyId,
+        renovationId: createdRenovations[4].id,
+      },
+    ] : []),
+  ]
+
+  for (const task of renovationTasks) {
+    await prisma.agentTask.create({
+      data: {
+        title: task.title,
+        description: task.description,
+        status: task.status,
+        priority: task.priority,
+        dueDate: task.dueDate,
+        assignee: task.assignee,
+        propertyId: task.propertyId,
+        renovationId: task.renovationId,
+        sourceQuery: "seed",
+      },
+    })
+  }
+
+  console.log(`  ✓ Created ${createdRenovations.length} renovations + ${renovationTasks.length} linked tasks`)
+}
+
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -993,10 +1221,12 @@ async function main() {
 
   // Clear existing data in correct FK order
   await prisma.agentRun.deleteMany()
+  await prisma.callLog.deleteMany()
   await prisma.document.deleteMany()
   await prisma.investorProperty.deleteMany()
   await prisma.investor.deleteMany()
   await prisma.agentTask.deleteMany()
+  await prisma.renovation.deleteMany()
   await prisma.monitoringResult.deleteMany()
   await prisma.scheduledJob.deleteMany()
   await prisma.weeklyReport.deleteMany()
@@ -1016,6 +1246,7 @@ async function main() {
   await seedWeeklyReports()
   await seedScheduledJobs()
   await seedAgentTasks()
+  await seedRenovations()
   await seedInvestors()
   await seedDocuments()
 
@@ -1033,6 +1264,7 @@ async function main() {
     investors: await prisma.investor.count(),
     investorProperties: await prisma.investorProperty.count(),
     documents: await prisma.document.count(),
+    renovations: await prisma.renovation.count(),
   }
 
   console.log("\n✅ Seed completed!")

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { listPropertiesQuery, createPropertyQuery, updatePropertyQuery, deletePropertyQuery } from "@/lib/db/queries/properties"
+import { listRenovationsQuery, createRenovationQuery, updateRenovationQuery, deleteRenovationQuery, getRenovationByIdQuery } from "@/lib/db/queries/renovations"
 import { listClientsQuery, createClientQuery, updateClientQuery, deleteClientQuery } from "@/lib/db/queries/clients"
 import { listLeadsQuery, createLeadQuery, updateLeadQuery, deleteLeadQuery } from "@/lib/db/queries/leads"
 import { listDealsQuery, createDealQuery, updateDealQuery, deleteDealQuery } from "@/lib/db/queries/deals"
@@ -78,6 +79,7 @@ export async function updatePropertyAction(id: number, data: {
   address?: string; district?: string; type?: string; price?: number; areaM2?: number
   status?: string; disposition?: string; yearBuilt?: number
   lastRenovationYear?: number; renovationNotes?: string; ownerId?: number
+  lifecycleStage?: string
 }): Promise<ActionResult> {
   try {
     await updatePropertyQuery(id, data)
@@ -395,7 +397,7 @@ export async function listTasksAction(filters: {
 
 export async function createTaskAction(data: {
   title: string; description?: string; priority: string; status?: string
-  dueDate?: string; assignee?: string; propertyId?: number; dealId?: number
+  dueDate?: string; assignee?: string; propertyId?: number; dealId?: number; renovationId?: number
 }): Promise<ActionResult> {
   try {
     const task = await createTask({
@@ -406,6 +408,7 @@ export async function createTaskAction(data: {
       assignee: data.assignee,
       propertyId: data.propertyId,
       dealId: data.dealId,
+      renovationId: data.renovationId,
     })
     revalidatePath("/sprava")
     return { success: true, data: { id: task.id } }
@@ -538,4 +541,92 @@ export async function deleteDocumentAction(id: number): Promise<ActionResult> {
     revalidatePath("/sprava")
     return { success: true, data: { id } }
   } catch (e) { return handleError(e) }
+}
+
+// ─── Renovations ─────────────────────────────────────────────────────────────
+
+export async function listRenovationsAction(filters: {
+  status?: string; phase?: string; isDelayed?: boolean; search?: string
+  limit: number; offset: number; sortBy: string; sortOrder: "asc" | "desc"
+}) {
+  const { items, total } = await listRenovationsQuery(filters)
+  return { items: items as Record<string, unknown>[], total }
+}
+
+export async function createRenovationAction(data: {
+  propertyId: number; phase?: string; plannedEndAt?: string
+  nextStep?: string; blockers?: string; ownerName?: string; contractorName?: string
+  budgetPlanned?: number; budgetActual?: number; notes?: string
+}): Promise<ActionResult> {
+  try {
+    const renovation = await createRenovationQuery({
+      ...data,
+      plannedEndAt: data.plannedEndAt ? new Date(data.plannedEndAt) : undefined,
+    })
+    revalidatePath("/sprava")
+    return { success: true, data: { id: renovation.id } }
+  } catch (e) { return handleError(e) }
+}
+
+export async function updateRenovationAction(id: number, data: {
+  phase?: string; status?: string; plannedEndAt?: string | null
+  nextStep?: string | null; blockers?: string | null
+  ownerName?: string | null; contractorName?: string | null
+  budgetPlanned?: number | null; budgetActual?: number | null; notes?: string | null
+}): Promise<ActionResult> {
+  try {
+    await updateRenovationQuery(id, {
+      ...data,
+      plannedEndAt: data.plannedEndAt !== undefined
+        ? (data.plannedEndAt ? new Date(data.plannedEndAt) : null)
+        : undefined,
+    })
+    revalidatePath("/sprava")
+    return { success: true, data: { id } }
+  } catch (e) { return handleError(e) }
+}
+
+export async function deleteRenovationAction(id: number): Promise<ActionResult> {
+  try {
+    await deleteRenovationQuery(id)
+    revalidatePath("/sprava")
+    return { success: true, data: { id } }
+  } catch (e) { return handleError(e) }
+}
+
+export async function getRenovationDetailAction(id: number) {
+  const r = await getRenovationByIdQuery(id)
+  if (!r) return null
+
+  const now = new Date()
+  return {
+    id: r.id,
+    propertyId: r.propertyId,
+    propertyAddress: r.property.address,
+    propertyDistrict: r.property.district,
+    propertyType: r.property.type,
+    propertyDisposition: r.property.disposition,
+    phase: r.phase,
+    status: r.status,
+    startedAt: r.startedAt.toISOString(),
+    plannedEndAt: r.plannedEndAt?.toISOString() ?? null,
+    actualEndAt: r.actualEndAt?.toISOString() ?? null,
+    isDelayed: r.isDelayed,
+    nextStep: r.nextStep,
+    blockers: r.blockers,
+    ownerName: r.ownerName,
+    contractorName: r.contractorName,
+    budgetPlanned: r.budgetPlanned ? Number(r.budgetPlanned) : null,
+    budgetActual: r.budgetActual ? Number(r.budgetActual) : null,
+    notes: r.notes,
+    tasks: r.tasks.map((t) => ({
+      id: t.id,
+      title: t.title,
+      status: t.status,
+      priority: t.priority,
+      dueDate: t.dueDate?.toISOString() ?? null,
+      assignee: t.assignee,
+      isOverdue: (t.status === "OPEN" || t.status === "IN_PROGRESS") && !!t.dueDate && t.dueDate < now,
+    })),
+  }
 }

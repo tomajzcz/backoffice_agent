@@ -42,6 +42,10 @@ import { getInvestorOverviewTool } from "./getInvestorOverview"
 import { getPropertyDocumentsTool } from "./getPropertyDocuments"
 import { scanMissingDocumentsTool } from "./scanMissingDocuments"
 import { analyzeNewListingsTool } from "./analyzeNewListings"
+// Renovation tools
+import { queryActiveRenovationsTool } from "./queryActiveRenovations"
+import { getRenovationDetailTool } from "./getRenovationDetail"
+import { scanRenovationHealthTool } from "./scanRenovationHealth"
 
 export const agentTools = {
   queryNewClients: queryNewClientsTool,
@@ -88,6 +92,10 @@ export const agentTools = {
   getPropertyDocuments: getPropertyDocumentsTool,
   scanMissingDocuments: scanMissingDocumentsTool,
   analyzeNewListings: analyzeNewListingsTool,
+  // Renovation tools
+  queryActiveRenovations: queryActiveRenovationsTool,
+  getRenovationDetail: getRenovationDetailTool,
+  scanRenovationHealth: scanRenovationHealthTool,
 } as const
 
 export type AgentToolName = keyof typeof agentTools

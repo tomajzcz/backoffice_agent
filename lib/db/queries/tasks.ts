@@ -9,6 +9,7 @@ export interface ListTasksFilters {
   assignee?: string
   search?: string
   propertyId?: number
+  renovationId?: number
   limit: number
   offset: number
   sortBy: string
@@ -22,6 +23,7 @@ export async function listTasksQuery(filters: ListTasksFilters) {
   if (filters.priority) where.priority = filters.priority as Prisma.EnumTaskPriorityFilter["equals"]
   if (filters.assignee) where.assignee = { contains: filters.assignee, mode: "insensitive" }
   if (filters.propertyId) where.propertyId = filters.propertyId
+  if (filters.renovationId) where.renovationId = filters.renovationId
   if (filters.search) where.title = { contains: filters.search, mode: "insensitive" }
 
   const orderBy: Prisma.AgentTaskOrderByWithRelationInput = { [filters.sortBy]: filters.sortOrder }
@@ -57,6 +59,7 @@ export async function createTask(params: {
   assignee?: string
   propertyId?: number
   dealId?: number
+  renovationId?: number
   sourceQuery?: string
 }) {
   const task = await prisma.agentTask.create({
@@ -68,6 +71,7 @@ export async function createTask(params: {
       assignee: params.assignee ?? null,
       propertyId: params.propertyId ?? null,
       dealId: params.dealId ?? null,
+      renovationId: params.renovationId ?? null,
       sourceQuery: params.sourceQuery ?? null,
       status: "OPEN",
     },

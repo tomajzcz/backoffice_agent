@@ -99,6 +99,24 @@ export const CALL_STATUS_LABELS: Record<string, string> = {
   SKIPPED: "Přeskočeno",
 }
 
+export const RENOVATION_PHASE_LABELS: Record<string, string> = {
+  PLANNING: "Plánování",
+  DEMOLITION: "Bourání",
+  ROUGH_WORK: "Hrubé práce",
+  INSTALLATIONS: "Instalace",
+  SURFACES: "Povrchy",
+  FINISHING: "Dokončování",
+  READY_FOR_HANDOVER: "Připraveno k předání",
+  COMPLETED: "Dokončeno",
+  ON_HOLD: "Pozastaveno",
+}
+
+export const RENOVATION_STATUS_LABELS: Record<string, string> = {
+  ACTIVE: "Aktivní",
+  COMPLETED: "Dokončeno",
+  ON_HOLD: "Pozastaveno",
+}
+
 // Status badge color maps
 export const STATUS_COLORS: Record<string, string> = {
   // Property
@@ -144,4 +162,12 @@ export const STATUS_COLORS: Record<string, string> = {
   PENDING: "text-amber-400 border-amber-500/20 bg-amber-500/10",
   INITIATED: "text-emerald-400 border-emerald-500/20 bg-emerald-500/10",
   NO_PHONE: "text-muted-foreground border-border/40 bg-secondary/40",
+  // Renovation phases
+  PLANNING: "text-blue-400 border-blue-500/20 bg-blue-500/10",
+  DEMOLITION: "text-red-400 border-red-500/20 bg-red-500/10",
+  ROUGH_WORK: "text-orange-400 border-orange-500/20 bg-orange-500/10",
+  INSTALLATIONS: "text-yellow-400 border-yellow-500/20 bg-yellow-500/10",
+  SURFACES: "text-cyan-400 border-cyan-500/20 bg-cyan-500/10",
+  FINISHING: "text-violet-400 border-violet-500/20 bg-violet-500/10",
+  READY_FOR_HANDOVER: "text-emerald-400 border-emerald-500/20 bg-emerald-500/10",
 }

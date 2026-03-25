@@ -72,6 +72,7 @@ model Property {
   tasks              AgentTask[]
   documents          Document[]
   investorProperties InvestorProperty[]
+  renovations        Renovation[]
 
   @@index([district])
   @@index([status])
@@ -133,26 +134,29 @@ model WeeklyReport {
 }
 
 model AgentTask {
-  id          Int          @id @default(autoincrement())
-  title       String
-  description String?
-  status      TaskStatus   @default(OPEN)
-  priority    TaskPriority @default(MEDIUM)
-  dueDate     DateTime?
-  assignee    String?
-  propertyId  Int?
-  dealId      Int?
-  sourceQuery String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  property    Property?    @relation(fields: [propertyId], references: [id])
-  deal        Deal?        @relation(fields: [dealId], references: [id])
+  id            Int          @id @default(autoincrement())
+  title         String
+  description   String?
+  status        TaskStatus   @default(OPEN)
+  priority      TaskPriority @default(MEDIUM)
+  dueDate       DateTime?
+  assignee      String?
+  propertyId    Int?
+  dealId        Int?
+  renovationId  Int?
+  sourceQuery   String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  property      Property?    @relation(fields: [propertyId], references: [id])
+  deal          Deal?        @relation(fields: [dealId], references: [id])
+  renovation    Renovation?  @relation(fields: [renovationId], references: [id])
 
   @@index([status])
   @@index([priority])
   @@index([dueDate])
   @@index([propertyId])
   @@index([dealId])
+  @@index([renovationId])
   @@index([createdAt])
   @@map("agent_tasks")
 }
@@ -348,6 +352,24 @@ enum DocumentType {
   OSTATNI
 }
 
+enum RenovationPhase {
+  PLANNING
+  DEMOLITION
+  ROUGH_WORK
+  INSTALLATIONS
+  SURFACES
+  FINISHING
+  READY_FOR_HANDOVER
+  COMPLETED
+  ON_HOLD
+}
+
+enum RenovationStatus {
+  ACTIVE
+  COMPLETED
+  ON_HOLD
+}
+
 enum CallStatus {
   PENDING
   INITIATED
@@ -374,4 +396,32 @@ model CallLog {
   @@index([showingId])
   @@index([clientId])
   @@map("call_logs")
+}
+
+model Renovation {
+  id             Int              @id @default(autoincrement())
+  propertyId     Int
+  phase          RenovationPhase  @default(PLANNING)
+  status         RenovationStatus @default(ACTIVE)
+  startedAt      DateTime         @default(now())
+  plannedEndAt   DateTime?
+  actualEndAt    DateTime?
+  nextStep       String?
+  blockers       String?
+  ownerName      String?
+  contractorName String?
+  budgetPlanned  Decimal?         @db.Decimal(12, 2)
+  budgetActual   Decimal?         @db.Decimal(12, 2)
+  isDelayed      Boolean          @default(false)
+  notes          String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  property       Property         @relation(fields: [propertyId], references: [id])
+  tasks          AgentTask[]
+
+  @@index([propertyId])
+  @@index([status])
+  @@index([phase])
+  @@index([isDelayed])
+  @@map("renovations")
 }

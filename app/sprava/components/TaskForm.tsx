@@ -16,9 +16,10 @@ interface Props {
   onSave: (data: Record<string, unknown>) => Promise<void>
   properties?: FormOption[]
   deals?: FormOption[]
+  hidePropertyDeal?: boolean
 }
 
-export function TaskForm({ open, onOpenChange, editingRecord, onSave, properties, deals }: Props) {
+export function TaskForm({ open, onOpenChange, editingRecord, onSave, properties, deals, hidePropertyDeal }: Props) {
   const [loading, setLoading] = useState(false)
   const isEdit = !!editingRecord
 
@@ -90,26 +91,30 @@ export function TaskForm({ open, onOpenChange, editingRecord, onSave, properties
               <Input name="assignee" placeholder="např. Pepa" defaultValue={(editingRecord?.assignee as string) ?? ""} />
             </div>
           </div>
-          <div>
-            <label className="text-xs text-muted-foreground">Nemovitost</label>
-            <select name="propertyId" defaultValue={(editingRecord?.propertyId as number)?.toString() ?? ""}
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm">
-              <option value="">— žádná —</option>
-              {properties?.map((p) => (
-                <option key={p.id} value={p.id}>{p.label}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground">Obchod</label>
-            <select name="dealId" defaultValue={(editingRecord?.dealId as number)?.toString() ?? ""}
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm">
-              <option value="">— žádný —</option>
-              {deals?.map((d) => (
-                <option key={d.id} value={d.id}>{d.label}</option>
-              ))}
-            </select>
-          </div>
+          {!hidePropertyDeal && (
+            <>
+              <div>
+                <label className="text-xs text-muted-foreground">Nemovitost</label>
+                <select name="propertyId" defaultValue={(editingRecord?.propertyId as number)?.toString() ?? ""}
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm">
+                  <option value="">— žádná —</option>
+                  {properties?.map((p) => (
+                    <option key={p.id} value={p.id}>{p.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">Obchod</label>
+                <select name="dealId" defaultValue={(editingRecord?.dealId as number)?.toString() ?? ""}
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm">
+                  <option value="">— žádný —</option>
+                  {deals?.map((d) => (
+                    <option key={d.id} value={d.id}>{d.label}</option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Zrušit</Button>
             <Button type="submit" disabled={loading}>

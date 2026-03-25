@@ -817,6 +817,105 @@ export type AgentToolResult =
   | GetPropertyDocumentsResult
   | ScanMissingDocumentsResult
   | AnalyzeNewListingsResult
+  | QueryActiveRenovationsResult
+  | GetRenovationDetailResult
+  | ScanRenovationHealthResult
+
+// ─── Renovation tools ────────────────────────────────────────────────────────
+
+export interface QueryActiveRenovationsResult {
+  toolName: "queryActiveRenovations"
+  totalCount: number
+  filterPhase: string | null
+  filterDistrict: string | null
+  renovations: Array<{
+    id: number
+    propertyId: number
+    propertyAddress: string
+    propertyDistrict: string
+    phase: string
+    phaseLabel: string
+    status: string
+    statusLabel: string
+    startedAt: string
+    plannedEndAt: string | null
+    isDelayed: boolean
+    nextStep: string | null
+    blockers: string | null
+    ownerName: string | null
+    contractorName: string | null
+    budgetPlanned: number | null
+    budgetActual: number | null
+    openTasksCount: number
+    overdueTasksCount: number
+  }>
+  byPhase: Array<{ phase: string; phaseLabel: string; count: number }>
+  chartType: "bar"
+  chartData: Array<{ name: string; pocet: number }>
+}
+
+export interface GetRenovationDetailResult {
+  toolName: "getRenovationDetail"
+  renovation: {
+    id: number
+    propertyId: number
+    propertyAddress: string
+    propertyDistrict: string
+    phase: string
+    phaseLabel: string
+    status: string
+    statusLabel: string
+    startedAt: string
+    plannedEndAt: string | null
+    actualEndAt: string | null
+    isDelayed: boolean
+    nextStep: string | null
+    blockers: string | null
+    ownerName: string | null
+    contractorName: string | null
+    budgetPlanned: number | null
+    budgetActual: number | null
+    budgetUtilization: number | null
+    notes: string | null
+    daysInProgress: number
+    tasks: Array<{
+      id: number
+      title: string
+      status: string
+      statusLabel: string
+      priority: string
+      priorityLabel: string
+      dueDate: string | null
+      isOverdue: boolean
+      assignee: string | null
+    }>
+    openTasksCount: number
+    overdueTasksCount: number
+  }
+  chartType: "none"
+}
+
+export interface ScanRenovationHealthResult {
+  toolName: "scanRenovationHealth"
+  totalActive: number
+  totalDelayed: number
+  totalOverBudget: number
+  totalWithBlockers: number
+  healthScore: number
+  issues: Array<{
+    category: string
+    categoryLabel: string
+    severity: "high" | "medium" | "low"
+    count: number
+    items: Array<{
+      renovationId: number
+      propertyAddress: string
+      detail: string
+    }>
+  }>
+  chartType: "bar"
+  chartData: Array<{ name: string; pocet: number }>
+}
 
 // ─── Email approval ──────────────────────────────────────────────────────────
 

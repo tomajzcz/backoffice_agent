@@ -160,6 +160,12 @@ export async function updatePropertyQuery(id: number, data: {
   expectedSalePrice?: number
   ownerId?: number
 }) {
+  // Fetch current property to detect lifecycle stage transitions
+  const currentProperty = data.lifecycleStage !== undefined
+    ? await prisma.property.findUnique({ where: { id }, select: { lifecycleStage: true } })
+    : null
+  const oldStage = currentProperty?.lifecycleStage
+
   const updateData: Prisma.PropertyUpdateInput = {}
   if (data.address !== undefined) updateData.address = data.address
   if (data.district !== undefined) updateData.district = data.district
@@ -180,11 +186,36 @@ export async function updatePropertyQuery(id: number, data: {
   if (data.expectedSalePrice !== undefined) updateData.expectedSalePrice = data.expectedSalePrice
   if (data.ownerId !== undefined) updateData.owner = { connect: { id: data.ownerId } }
 
-  return prisma.property.update({
+  const result = await prisma.property.update({
     where: { id },
     data: updateData,
     include: { owner: { select: { name: true, email: true, phone: true } } },
   })
+
+  // Auto-create/complete renovation on lifecycle stage transition
+  if (data.lifecycleStage !== undefined && data.lifecycleStage !== oldStage) {
+    if (data.lifecycleStage === "IN_RENOVATION") {
+      // Create renovation if none active
+      await prisma.$transaction(async (tx) => {
+        const existing = await tx.renovation.findFirst({
+          where: { propertyId: id, status: "ACTIVE" },
+        })
+        if (!existing) {
+          await tx.renovation.create({
+            data: { propertyId: id, phase: "PLANNING", status: "ACTIVE" },
+          })
+        }
+      })
+    } else if (oldStage === "IN_RENOVATION") {
+      // Complete active renovation
+      await prisma.renovation.updateMany({
+        where: { propertyId: id, status: "ACTIVE" },
+        data: { status: "COMPLETED", phase: "COMPLETED", actualEndAt: new Date() },
+      })
+    }
+  }
+
+  return result
 }
 
 export async function deletePropertyQuery(id: number) {

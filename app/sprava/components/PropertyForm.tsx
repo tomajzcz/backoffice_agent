@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { PROPERTY_TYPE_LABELS, PROPERTY_STATUS_LABELS } from "@/lib/constants/labels"
+import { PROPERTY_TYPE_LABELS, PROPERTY_STATUS_LABELS, LIFECYCLE_STAGE_LABELS } from "@/lib/constants/labels"
 import type { FormOption } from "@/app/sprava/actions"
 
 const CURRENT_YEAR = new Date().getFullYear()
@@ -41,6 +41,7 @@ export function PropertyForm({ open, onOpenChange, editingRecord, onSave, client
       lastRenovationYear: fd.get("lastRenovationYear") ? Number(fd.get("lastRenovationYear")) : undefined,
       renovationNotes: (fd.get("renovationNotes") as string) || undefined,
       ownerId: fd.get("ownerId") ? Number(fd.get("ownerId")) : undefined,
+      lifecycleStage: (fd.get("lifecycleStage") as string) || undefined,
     }
     await onSave(data)
     setLoading(false)
@@ -97,6 +98,17 @@ export function PropertyForm({ open, onOpenChange, editingRecord, onSave, client
             <div>
               <Label htmlFor="disposition">Dispozice</Label>
               <Input id="disposition" name="disposition" placeholder="např. 3+kk" defaultValue={String(editingRecord?.disposition ?? "")} />
+            </div>
+            <div className="col-span-2">
+              <Label>Fáze životního cyklu</Label>
+              <Select name="lifecycleStage" defaultValue={editingRecord?.lifecycleStage != null ? String(editingRecord.lifecycleStage) : undefined}>
+                <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                <SelectContent>
+                  {Object.entries(LIFECYCLE_STAGE_LABELS).map(([k, v]) => (
+                    <SelectItem key={k} value={k}>{v}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label>Rok výstavby</Label>

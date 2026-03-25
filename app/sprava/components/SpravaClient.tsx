@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useTransition, useCallback } from "react"
+import { useRouter } from "next/navigation"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,11 +16,13 @@ import { ShowingForm, type CalendarConflictInfo } from "./ShowingForm"
 import { TaskForm } from "./TaskForm"
 import { InvestorForm } from "./InvestorForm"
 import { DocumentForm } from "./DocumentForm"
+import { RenovationForm } from "./RenovationForm"
 import {
   PROPERTY_TYPE_LABELS, PROPERTY_STATUS_LABELS, LIFECYCLE_STAGE_LABELS,
   ACQUISITION_SOURCE_LABELS, CLIENT_SEGMENT_LABELS,
   LEAD_STATUS_LABELS, DEAL_STATUS_LABELS, SHOWING_STATUS_LABELS,
   TASK_PRIORITY_LABELS, TASK_STATUS_LABELS, DOCUMENT_TYPE_LABELS,
+  RENOVATION_PHASE_LABELS, RENOVATION_STATUS_LABELS,
 } from "@/lib/constants/labels"
 import {
   listPropertiesAction, createPropertyAction, updatePropertyAction, deletePropertyAction,
@@ -30,6 +33,7 @@ import {
   listTasksAction, createTaskAction, updateTaskAction, deleteTaskAction,
   listInvestorsAction, createInvestorAction, updateInvestorAction, deleteInvestorAction,
   listDocumentsAction, createDocumentAction, updateDocumentAction, deleteDocumentAction,
+  listRenovationsAction, createRenovationAction, updateRenovationAction, deleteRenovationAction,
   type ShowingActionResult,
   getFormOptionsAction,
   type FormOption,
@@ -121,9 +125,24 @@ const DOCUMENT_COLUMNS: Column[] = [
   { key: "uploadedAt", label: "Nahráno", sortable: true, type: "date" },
 ]
 
+const RENOVATION_COLUMNS: Column[] = [
+  { key: "id", label: "ID", sortable: true, type: "id" },
+  { key: "propertyAddress", label: "Nemovitost", className: "text-foreground/85 font-medium" },
+  { key: "propertyDistrict", label: "Čtvrť" },
+  { key: "phase", label: "Fáze", type: "badge", labelMap: RENOVATION_PHASE_LABELS },
+  { key: "status", label: "Status", type: "badge", labelMap: RENOVATION_STATUS_LABELS },
+  { key: "startedAt", label: "Začátek", sortable: true, type: "date" },
+  { key: "plannedEndAt", label: "Plán. konec", type: "date" },
+  { key: "isDelayed", label: "Zpoždění", type: "badge", labelMap: { true: "Zpožděno", false: "OK" } },
+  { key: "nextStep", label: "Další krok" },
+  { key: "openTasksCount", label: "Úkolů", type: "number" },
+  { key: "overdueTasksCount", label: "Po termínu", type: "number" },
+  { key: "ownerName", label: "Vlastník" },
+]
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type EntityTab = "properties" | "clients" | "leads" | "deals" | "showings" | "tasks" | "investors" | "documents"
+type EntityTab = "properties" | "clients" | "leads" | "deals" | "showings" | "tasks" | "investors" | "documents" | "renovations"
 
 interface TabState {
   items: Record<string, unknown>[]
@@ -146,6 +165,7 @@ interface Props {
 }
 
 export function SpravaClient({ initialProperties }: Props) {
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [activeTab, setActiveTab] = useState<EntityTab>("properties")
   const [error, setError] = useState<string | null>(null)
@@ -174,6 +194,7 @@ export function SpravaClient({ initialProperties }: Props) {
     tasks: defaultState("createdAt"),
     investors: defaultState("name"),
     documents: defaultState("uploadedAt"),
+    renovations: defaultState("startedAt"),
   })
 
   const currentState = tabStates[activeTab]
@@ -219,6 +240,9 @@ export function SpravaClient({ initialProperties }: Props) {
         case "documents":
           result = await listDocumentsAction(filters)
           break
+        case "renovations":
+          result = await listRenovationsAction(filters)
+          break
       }
 
       setTabStates((prev) => ({
@@ -260,7 +284,7 @@ export function SpravaClient({ initialProperties }: Props) {
   // ─── CRUD handlers ─────────────────────────────────────────────────────────
 
   async function loadFormOptions() {
-    const needsOptions = activeTab === "properties" || activeTab === "deals" || activeTab === "showings" || activeTab === "tasks" || activeTab === "documents"
+    const needsOptions = activeTab === "properties" || activeTab === "deals" || activeTab === "showings" || activeTab === "tasks" || activeTab === "documents" || activeTab === "renovations"
     if (needsOptions) {
       const opts = await getFormOptionsAction()
       setFormOptions(opts)
@@ -303,6 +327,7 @@ export function SpravaClient({ initialProperties }: Props) {
         case "tasks": result = await updateTaskAction(id, data); break
         case "investors": result = await updateInvestorAction(id, data); break
         case "documents": result = await updateDocumentAction(id, data); break
+        case "renovations": result = await updateRenovationAction(id, data); break
       }
     } else {
       switch (activeTab) {
@@ -313,6 +338,7 @@ export function SpravaClient({ initialProperties }: Props) {
         case "tasks": result = await createTaskAction(data as Parameters<typeof createTaskAction>[0]); break
         case "investors": result = await createInvestorAction(data as Parameters<typeof createInvestorAction>[0]); break
         case "documents": result = await createDocumentAction(data as Parameters<typeof createDocumentAction>[0]); break
+        case "renovations": result = await createRenovationAction(data as Parameters<typeof createRenovationAction>[0]); break
         case "showings": {
           const showingResult = await createShowingAction(data as Parameters<typeof createShowingAction>[0]) as ShowingActionResult
           if (!showingResult.success && showingResult.calendarConflict) {
@@ -351,6 +377,7 @@ export function SpravaClient({ initialProperties }: Props) {
       case "tasks": result = await deleteTaskAction(id); break
       case "investors": result = await deleteInvestorAction(id); break
       case "documents": result = await deleteDocumentAction(id); break
+      case "renovations": result = await deleteRenovationAction(id); break
     }
 
     if (result!.success) {
@@ -374,6 +401,7 @@ export function SpravaClient({ initialProperties }: Props) {
     tasks: TASK_COLUMNS,
     investors: INVESTOR_COLUMNS,
     documents: DOCUMENT_COLUMNS,
+    renovations: RENOVATION_COLUMNS,
   }
 
   const TAB_LABELS: Record<EntityTab, string> = {
@@ -385,6 +413,7 @@ export function SpravaClient({ initialProperties }: Props) {
     tasks: "Úkoly",
     investors: "Investoři",
     documents: "Dokumenty",
+    renovations: "Rekonstrukce",
   }
 
   // ─── Form components map ────────────────────────────────────────────────────
@@ -400,6 +429,7 @@ export function SpravaClient({ initialProperties }: Props) {
       case "tasks": return <TaskForm {...props} properties={formOptions?.properties ?? []} deals={formOptions?.deals ?? []} />
       case "investors": return <InvestorForm {...props} />
       case "documents": return <DocumentForm {...props} properties={formOptions?.properties ?? []} />
+      case "renovations": return <RenovationForm {...props} properties={formOptions?.properties ?? []} />
     }
   }
 
@@ -468,6 +498,13 @@ export function SpravaClient({ initialProperties }: Props) {
                   if (daysUntil < 0) return "bg-red-500/8 border-l-2 border-l-red-500/40"
                   if (daysUntil < 3) return "bg-amber-500/8 border-l-2 border-l-amber-500/40"
                   return ""
+                } : tab === "renovations" ? (row) => {
+                  if (row.isDelayed === true) return "bg-red-500/8 border-l-2 border-l-red-500/40"
+                  if ((row.overdueTasksCount as number) > 0) return "bg-amber-500/8 border-l-2 border-l-amber-500/40"
+                  return ""
+                } : undefined}
+                onRowClick={tab === "renovations" ? (row) => {
+                  router.push(`/sprava/rekonstrukce/${row.id}`)
                 } : undefined}
               />
             )}

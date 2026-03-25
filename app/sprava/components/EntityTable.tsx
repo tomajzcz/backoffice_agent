@@ -33,6 +33,7 @@ interface Props {
   totalCount: number
   onPageChange: (page: number) => void
   rowClassName?: (row: Record<string, unknown>) => string
+  onRowClick?: (row: Record<string, unknown>) => void
 }
 
 function formatDate(d: string) {
@@ -88,7 +89,7 @@ function CellValue({ column, value }: { column: Column; value: unknown }) {
 
 export function EntityTable({
   columns, data, sortBy, sortOrder, onSort, onEdit, onDelete,
-  page, totalPages, totalCount, onPageChange, rowClassName,
+  page, totalPages, totalCount, onPageChange, rowClassName, onRowClick,
 }: Props) {
   return (
     <div>
@@ -125,14 +126,15 @@ export function EntityTable({
               data.map((row, i) => (
                 <tr
                   key={String(row.id)}
-                  className={`border-t border-border/20 hover:bg-secondary/20 transition-colors ${rowClassName?.(row) ?? ""}`}
+                  className={`border-t border-border/20 hover:bg-secondary/20 transition-colors ${rowClassName?.(row) ?? ""} ${onRowClick ? "cursor-pointer" : ""}`}
+                  onClick={onRowClick ? () => onRowClick(row) : undefined}
                 >
                   {columns.map((col) => (
                     <td key={col.key} className="py-2 px-3 max-w-[200px] truncate">
                       <CellValue column={col} value={row[col.key]} />
                     </td>
                   ))}
-                  <td className="py-2 px-2">
+                  <td className="py-2 px-2" onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm" className="h-6 w-6 p-0">

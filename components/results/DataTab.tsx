@@ -1183,5 +1183,209 @@ export function DataTab({ result, onAction }: Props) {
     )
   }
 
+  // ─── Renovation Tools ────────────────────────────────────────────────────
+
+  if (result.toolName === "getRenovationDetail") {
+    const { renovation } = result
+    const budgetPct = renovation.budgetPlanned && renovation.budgetActual
+      ? Math.round((renovation.budgetActual / renovation.budgetPlanned) * 100)
+      : null
+
+    return (
+      <div className="animate-fade-in space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold text-foreground/85" style={{ fontFamily: "Syne, sans-serif" }}>
+              {renovation.propertyAddress}
+            </p>
+            <p className="text-[10px] text-muted-foreground/50 font-mono mt-0.5">
+              {renovation.propertyDistrict} · {renovation.daysInProgress} dní · {renovation.phaseLabel}
+            </p>
+          </div>
+          <div className="flex gap-1.5">
+            <span className={`px-1.5 py-0.5 rounded text-[10px] border font-mono ${STATUS_COLORS[renovation.phase] ?? ""}`}>
+              {renovation.phaseLabel}
+            </span>
+            {renovation.isDelayed && (
+              <span className="px-1.5 py-0.5 rounded text-[10px] border font-mono text-red-400 border-red-500/20 bg-red-500/10">
+                Zpožděno
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 text-xs">
+          <div>
+            <span className="text-muted-foreground/50">Vlastník:</span>{" "}
+            <span className="text-foreground/70">{renovation.ownerName ?? "—"}</span>
+          </div>
+          <div>
+            <span className="text-muted-foreground/50">Dodavatel:</span>{" "}
+            <span className="text-foreground/70">{renovation.contractorName ?? "—"}</span>
+          </div>
+          <div>
+            <span className="text-muted-foreground/50">Rozpočet:</span>{" "}
+            <span className={`font-mono ${budgetPct && budgetPct > 100 ? "text-red-400" : "text-amber-400"}`}>
+              {renovation.budgetActual ? formatCZK(renovation.budgetActual) : "—"}
+              {budgetPct ? ` (${budgetPct}%)` : ""}
+            </span>
+          </div>
+          <div>
+            <span className="text-muted-foreground/50">Úkoly:</span>{" "}
+            <span className="text-foreground/70">{renovation.openTasksCount} otevřených</span>
+            {renovation.overdueTasksCount > 0 && (
+              <span className="text-red-400 ml-1">({renovation.overdueTasksCount} po termínu)</span>
+            )}
+          </div>
+        </div>
+
+        {renovation.nextStep && (
+          <div className="text-xs">
+            <span className="text-muted-foreground/50">Další krok:</span>{" "}
+            <span className="text-foreground/70">{renovation.nextStep}</span>
+          </div>
+        )}
+        {renovation.blockers && (
+          <div className="text-xs">
+            <span className="text-red-400/70">Blokátory:</span>{" "}
+            <span className="text-red-400/90">{renovation.blockers}</span>
+          </div>
+        )}
+
+        {renovation.tasks.length > 0 && (
+          <div className="overflow-x-auto mt-3">
+            <table className="w-full text-xs">
+              <thead>
+                <tr>
+                  {["Úkol", "Status", "Priorita", "Termín"].map((h) => (
+                    <th key={h} className="text-left pb-2 text-[10px] uppercase tracking-wider text-muted-foreground/60 font-medium border-b border-border/40 pr-3" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {renovation.tasks.map((t) => (
+                  <tr key={t.id} className={`border-b border-border/20 ${t.isOverdue ? "bg-red-500/8" : ""}`}>
+                    <td className="py-1.5 pr-3 text-foreground/85">{t.title}</td>
+                    <td className="py-1.5 pr-3">
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] border font-mono ${STATUS_COLORS[t.status] ?? ""}`}>
+                        {t.statusLabel}
+                      </span>
+                    </td>
+                    <td className="py-1.5 pr-3">
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] border font-mono ${STATUS_COLORS[t.priority] ?? ""}`}>
+                        {t.priorityLabel}
+                      </span>
+                    </td>
+                    <td className={`py-1.5 font-mono text-muted-foreground/60 ${t.isOverdue ? "text-red-400" : ""}`}>
+                      {t.dueDate ? formatDate(t.dueDate) : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  if (result.toolName === "queryActiveRenovations") {
+    const { renovations, totalCount } = result
+
+    return (
+      <div className="animate-fade-in">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs text-muted-foreground" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+            {totalCount} aktivních rekonstrukcí
+          </p>
+          <ExportButtons result={result} />
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr>
+                {["Nemovitost", "Fáze", "Zpoždění", "Další krok", "Úkoly", "Dodavatel"].map((h) => (
+                  <th key={h} className="text-left pb-2 text-[10px] uppercase tracking-wider text-muted-foreground/60 font-medium border-b border-border/40 pr-3" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {renovations.map((r) => (
+                <tr key={r.id} className={`border-b border-border/20 hover:bg-secondary/30 ${r.isDelayed ? "bg-red-500/8" : ""}`}>
+                  <td className="py-2 pr-3">
+                    <div className="text-foreground/85 font-medium">{r.propertyAddress}</div>
+                    <div className="text-[10px] text-muted-foreground/50">{r.propertyDistrict}</div>
+                  </td>
+                  <td className="py-2 pr-3">
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] border font-mono ${STATUS_COLORS[r.phase] ?? ""}`}>
+                      {r.phaseLabel}
+                    </span>
+                  </td>
+                  <td className="py-2 pr-3">
+                    {r.isDelayed ? (
+                      <span className="px-1.5 py-0.5 rounded text-[10px] border font-mono text-red-400 border-red-500/20 bg-red-500/10">Zpožděno</span>
+                    ) : (
+                      <span className="text-muted-foreground/40">—</span>
+                    )}
+                  </td>
+                  <td className="py-2 pr-3 text-muted-foreground/70 max-w-[150px] truncate">{r.nextStep ?? "—"}</td>
+                  <td className="py-2 pr-3 font-mono">
+                    {r.openTasksCount}
+                    {r.overdueTasksCount > 0 && <span className="text-red-400 ml-1">({r.overdueTasksCount}!)</span>}
+                  </td>
+                  <td className="py-2 pr-3 text-muted-foreground/70">{r.contractorName ?? "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    )
+  }
+
+  if (result.toolName === "scanRenovationHealth") {
+    const { issues, healthScore, totalActive, totalDelayed } = result
+
+    return (
+      <div className="animate-fade-in space-y-4">
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted-foreground" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+            {totalActive} aktivních · {totalDelayed} zpožděných · skóre {healthScore}/100
+          </p>
+          <ExportButtons result={result} />
+        </div>
+        {issues.map((issue) => (
+          <div key={issue.category} className="rounded-lg border border-border/40 bg-secondary/10 px-4 py-3">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-foreground/80">{issue.categoryLabel}</span>
+              <span className={`px-1.5 py-0.5 rounded text-[10px] border font-mono ${
+                issue.severity === "high" ? "text-red-400 border-red-500/20 bg-red-500/10"
+                : issue.severity === "medium" ? "text-amber-400 border-amber-500/20 bg-amber-500/10"
+                : "text-muted-foreground border-border/40 bg-secondary/40"
+              }`}>
+                {issue.count}x
+              </span>
+            </div>
+            <div className="space-y-1">
+              {issue.items.map((item, i) => (
+                <div key={i} className="flex items-center gap-2 text-xs">
+                  <AlertCircle className={`w-3 h-3 flex-shrink-0 ${
+                    issue.severity === "high" ? "text-red-400" : "text-amber-400"
+                  }`} />
+                  <span className="text-foreground/70">{item.propertyAddress}</span>
+                  <span className="text-muted-foreground/50">— {item.detail}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
   return null
 }

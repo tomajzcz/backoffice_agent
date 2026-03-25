@@ -57,7 +57,8 @@ export function ResultsPanel({ messages, latestToolResult, latestExplainability,
       toolName === "createCalendarEvent" ||
       toolName === "updateCalendarEvent" ||
       toolName === "deleteCalendarEvent" ||
-      toolName === "listCalendarEvents"
+      toolName === "listCalendarEvents" ||
+      toolName === "getRenovationDetail"
     ) {
       setActiveTab("data")
     } else {
@@ -169,6 +170,12 @@ export function ResultsPanel({ messages, latestToolResult, latestExplainability,
                 ? `${latestToolResult.totalWithMissingDocs} nemovitostí s chybějícími dokumenty`
                 : latestToolResult.toolName === "analyzeNewListings"
                 ? `${latestToolResult.totalResults} nabídek · ${latestToolResult.jobName}`
+                : latestToolResult.toolName === "queryActiveRenovations"
+                ? `${latestToolResult.totalCount} aktivních rekonstrukcí`
+                : latestToolResult.toolName === "getRenovationDetail"
+                ? `Rekonstrukce #${latestToolResult.renovation.id} · ${latestToolResult.renovation.propertyAddress}`
+                : latestToolResult.toolName === "scanRenovationHealth"
+                ? `Zdraví rekonstrukcí: ${latestToolResult.healthScore}/100 · ${latestToolResult.totalDelayed} zpožděných`
                 : ""
               : "Čeká na dotaz"}
           </p>

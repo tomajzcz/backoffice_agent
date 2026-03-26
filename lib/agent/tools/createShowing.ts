@@ -5,6 +5,7 @@ import {
   createCalendarEvent,
   buildShowingEventDescription,
 } from "@/lib/google/calendar"
+import { sendShowingConfirmationSms } from "@/lib/integrations/twilio"
 import { SHOWING_STATUS_LABELS as STATUS_LABELS } from "@/lib/constants/labels"
 import type { CreateShowingResult } from "@/types/agent"
 
@@ -12,7 +13,7 @@ export const createShowingTool = tool({
   description:
     "Naplánuje novou prohlídku nemovitosti. " +
     "Vyžaduje propertyId, clientId a datum/čas prohlídky. " +
-    "Pokud createCalendarEvent je true, automaticky vytvoří událost v Google Kalendáři.",
+    "Automaticky vytvoří událost v Google Kalendáři a pošle klientovi potvrzovací SMS (obojí default true, vypni jen pokud uživatel výslovně nechce).",
   parameters: z.object({
     propertyId: z.number().int().describe("ID nemovitosti"),
     clientId: z.number().int().describe("ID klienta"),
@@ -20,8 +21,12 @@ export const createShowingTool = tool({
     notes: z.string().optional().describe("Poznámky k prohlídce"),
     createCalendarEvent: z
       .boolean()
-      .optional()
-      .describe("Vytvořit událost v Google Kalendáři (výchozí: false)"),
+      .default(true)
+      .describe("Vytvořit událost v Google Kalendáři (výchozí: true)"),
+    sendSmsConfirmation: z
+      .boolean()
+      .default(true)
+      .describe("Poslat klientovi potvrzovací SMS s detaily prohlídky (výchozí: true)"),
   }),
   execute: async (params): Promise<CreateShowingResult> => {
     // Create showing in DB first
@@ -33,6 +38,7 @@ export const createShowingTool = tool({
     })
 
     let calendarEventId: string | null = null
+    let calendarError: string | undefined
 
     // Create Google Calendar event if requested
     if (params.createCalendarEvent) {
@@ -56,8 +62,32 @@ export const createShowingTool = tool({
           googleCalendarEventId: event.id,
         })
       } catch (e) {
-        // Calendar creation failed, but showing was created — continue with warning
         console.error("Nepodařilo se vytvořit událost v kalendáři:", e)
+        calendarError = e instanceof Error ? e.message : "Neznámá chyba při vytváření kalendářové události"
+      }
+    }
+
+    // Send SMS confirmation if requested
+    let smsSent = false
+    let smsError: string | undefined
+
+    if (params.sendSmsConfirmation) {
+      const clientPhone = showing.client.phone
+      if (!clientPhone) {
+        smsError = "Klient nemá telefonní číslo"
+      } else {
+        try {
+          await sendShowingConfirmationSms({
+            clientName: showing.client.name,
+            clientPhone,
+            propertyAddress: showing.property.address,
+            scheduledAt: params.scheduledAt,
+          })
+          smsSent = true
+        } catch (e) {
+          console.error("Nepodařilo se odeslat potvrzovací SMS:", e)
+          smsError = e instanceof Error ? e.message : "Neznámá chyba při odesílání SMS"
+        }
       }
     }
 
@@ -71,6 +101,9 @@ export const createShowingTool = tool({
         status: showing.status,
         statusLabel: STATUS_LABELS[showing.status] ?? showing.status,
         googleCalendarEventId: calendarEventId,
+        calendarError,
+        smsSent,
+        smsError,
       },
       chartType: "none",
     }

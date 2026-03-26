@@ -1,123 +1,216 @@
 # Back Office Operations Agent
 
-AI-powered assistant for a real estate back office in Prague. Built as a production-quality demo of how an AI agent can manage day-to-day operations — from analytics and scheduling to market monitoring and investor reporting.
+AI-powered conversational agent for managing back office operations at a Prague real estate company. A back office manager named "Pepa" interacts through a Czech-language chat interface to query analytics, manage properties, schedule showings, generate reports, and monitor the market -- all grounded in real database tools, never hallucinated.
 
-## What It Does
+Every answer is backed by structured tool execution against a live PostgreSQL database, external API calls, and transparent audit logs.
 
-**Pepa** runs the back office of a Prague real estate firm. Instead of switching between spreadsheets, email, calendar, and market portals, he talks to an AI agent that handles everything through a single chat interface.
-
-The agent has **45 tools** that connect to a real database, Google Calendar, Gmail, and market scrapers. Every response is backed by real data — no hallucinated numbers.
+---
 
 ## Key Features
 
-- **AI Chat** — Natural language interface in Czech, powered by Claude claude-sonnet-4-6
-- **Analytics & Reporting** — KPIs, client analysis, lead/sales trends, property profitability
-- **Google Calendar** — View availability, book showings, sync events
-- **Gmail Integration** — Draft emails with AI, review before sending (never auto-sends)
-- **PPTX & PDF Export** — Generate presentations and reports from real data
-- **Market Monitoring** — Automated scraping of sreality.cz and bezrealitky.cz at 5 AM
-- **Voice Reminders** — Automated showing reminder calls via ElevenLabs
-- **Data Management** — Full CRUD UI for properties, clients, leads, deals, showings
-- **Operational Health** — 0–100 health score with issue detection
-- **Renovation Tracking** — Phase monitoring, budget control, blocker identification
+- Natural language queries in Czech with keyword-based tool routing
+- 45 specialized tools across 13 categories (analytics, CRUD, export, integrations, monitoring)
+- Analytics and KPI dashboards with interactive Recharts visualizations
+- Google Calendar integration (availability checks, event booking, rescheduling)
+- Gmail draft creation with attachments (human-in-the-loop, never auto-sends)
+- Twilio SMS confirmations for showing creation, updates, and cancellations
+- ElevenLabs outbound voice reminders for upcoming showings
+- PPTX, PDF, and CSV export with token-based download system
+- Market monitoring via Sreality and Bezrealitky scrapers on automated schedules
+- Full data management UI at `/sprava` for all entities
+- Automation dashboard at `/dashboard` for monitoring jobs and cron oversight
+- Renovation project tracking with per-property detail views
+- Investor portfolio management and profitability calculations
+- Operational health scoring across properties, leads, and tasks
+- Explainability panel showing tools used, data sources, filters, and record counts
 
-## How It Works
-
-```
-User (Czech) → Chat Panel → POST /api/chat → Claude claude-sonnet-4-6 + 45 tools → SSE stream
-                                                      ↓
-                                              PostgreSQL · Google APIs · Scrapers
-                                                      ↓
-                              Results Panel ← Typed results with auto-tab switching
-                              (Charts · Tables · Reports · Email drafts · Logs)
-```
-
-The UI is split-screen: chat on the left, results on the right with 6 tabs that auto-switch based on what the agent returns.
+---
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Framework | Next.js 15 (App Router), React 19, TypeScript 5 |
-| AI | Claude claude-sonnet-4-6 via Vercel AI SDK |
-| Database | PostgreSQL (Neon) + Prisma 6 |
-| UI | Tailwind CSS, shadcn/ui, Recharts |
-| Export | PptxGenJS, PDFKit |
-| Voice | ElevenLabs Conversational AI |
-| Google | Calendar API, Gmail API (googleapis) |
-| Scraping | cheerio (sreality.cz, bezrealitky.cz) |
-| Hosting | Vercel (with cron jobs) |
+| Layer | Technology | Version |
+|-------|-----------|---------|
+| Framework | Next.js (App Router) | 15.3 |
+| AI | Vercel AI SDK + @ai-sdk/anthropic | 4.3 |
+| LLM | Claude Sonnet 4.6 | -- |
+| Database | PostgreSQL (Neon) + Prisma | 6.5 |
+| UI | React, Radix UI, Tailwind CSS, Recharts | 19 / 3.4 |
+| Export | PptxGenJS, PDFKit | 4.0 / 0.18 |
+| Google | googleapis | 171.4 |
+| SMS | Twilio | -- |
+| Voice | ElevenLabs | -- |
+| Validation | Zod | 3.24 |
+| Language | TypeScript (strict mode) | 5 |
+
+---
+
+## Application Pages
+
+| Page | URL | Description |
+|------|-----|-------------|
+| Chat | `/` | AI agent conversation with split-screen results panel (6 tabs) |
+| Data Management | `/sprava` | CRUD interface for properties, clients, leads, deals, showings |
+| Automation | `/dashboard` | Monitoring jobs, reminder call logs, executive report history |
+
+The chat interface uses a dark theme with amber accents. The layout is split-screen: a 400px chat panel on the left, and a flex-1 results panel on the right with six tabs -- Answer, Data, Chart, Report, Email, and Logs.
+
+---
 
 ## Quick Start
 
 ```bash
 git clone <repo-url>
-cd backoffice-agent
+cd backoffice_agent
 npm install
-cp .env.example .env.local    # Fill in: DATABASE_URL, DIRECT_URL, ANTHROPIC_API_KEY
+cp .env.example .env.local   # fill in required values (see Environment Variables)
 npm run db:migrate
 npm run db:seed
-npm run dev                    # → http://localhost:3000
+npm run dev
 ```
 
-Minimum required env vars: `DATABASE_URL`, `DIRECT_URL`, `ANTHROPIC_API_KEY`. Google and ElevenLabs features are optional.
+### Environment Variables
 
-## Application Pages
+```
+DATABASE_URL            # PostgreSQL connection string (Neon)
+DIRECT_URL              # Direct DB connection for migrations
+ANTHROPIC_API_KEY       # Claude API key
+GOOGLE_CLIENT_ID        # Google OAuth2
+GOOGLE_CLIENT_SECRET
+GOOGLE_REFRESH_TOKEN
+TWILIO_ACCOUNT_SID      # Twilio SMS
+TWILIO_AUTH_TOKEN
+TWILIO_PHONE_NUMBER     # E.164 format
+CRON_SECRET             # Vercel cron authorization
+```
 
-| Page | URL | Purpose |
-|------|-----|---------|
-| Chat | `/` | Main AI interface — split-screen with results panel |
-| Správa (Data Management) | `/sprava` | Direct CRUD for all entities — tables, forms, filters |
-| Automatizace (Dashboard) | `/dashboard` | Monitoring jobs + voice call logs |
+---
 
 ## Example Conversations
 
-**Morning briefing**: "Jaký je stav operativy?" → Agent runs health scan, renovation check, overdue tasks → Returns 0–100 score with prioritized issues.
+### 1. Morning Briefing
 
-**Book a showing**: "Naplánuj prohlídku bytu na Vinohradech na příští úterý" → Agent finds property, checks calendar, offers time slots, creates showing + calendar event + invitation email draft.
+**Prompt:** `"Jaky je stav operativy?"`
 
-**Investor report**: "Připrav přehled pro investory" → Agent pulls portfolio data, calculates ROI, generates report, creates PPTX presentation with charts.
+The agent calls `scanOperationalHealth`, `scanRenovationHealth`, and `scanOverdueTasks` to produce a combined operations status report with health scores and flagged issues.
 
-**Market check**: "Co je nového na trhu v Praze 2?" → Agent checks monitoring results, scores listings by relevance, presents top opportunities with prices and links.
+### 2. Book a Showing
 
-## Documentation
+**Prompt:** `"Naplánuj prohlídku na Vinohradské 15 pro Jana Nováka"`
 
-### Technical (English)
+Multi-step execution: `getPropertyDetails` to resolve the property, `getCalendarAvailability` to find a free slot, then `createShowing` which also triggers an SMS confirmation via Twilio and creates a Google Calendar event.
+
+### 3. Investor Report
+
+**Prompt:** `"Připrav přehled portfolia pro investory"`
+
+Runs `getInvestorOverview` and `calculatePropertyProfitability`, then `generatePresentation` to produce a downloadable PPTX deck with KPI slides.
+
+### 4. Market Check
+
+**Prompt:** `"Co je nového na trhu v Holešovicích?"`
+
+Calls `listScheduledJobs` and `getMonitoringResults` to pull the latest scraped listings, then `analyzeNewListings` to surface relevant opportunities in the Holesovice district.
+
+---
+
+## How It Works
+
+```
+User message (Czech)
+    |
+    v
+POST /api/chat
+    |
+    v
+selectTools() -- keyword matching --> filtered tool subset (13 groups)
+    |
+    v
+streamText() -- Claude Sonnet 4.6, maxSteps: 5
+    |
+    v
+Tool execution --> DB queries / external APIs
+    |
+    v
+SSE streaming response
+    |
+    v
+Frontend auto-switches result tab (Answer | Data | Chart | Report | Email | Logs)
+```
+
+The tool selector scans the Czech user input for keywords (e.g., klient, nemovitost, prohlidka) and maps them to relevant tool groups, reducing context size. The CORE group is always included. When no keywords match, all tools are sent as a fallback.
+
+Message history is trimmed with a three-layer strategy: hard cap at 20 messages, payload stripping (base64 data URLs replaced, large content truncated), and array capping (large result sets limited to 3 items with count metadata).
+
+---
+
+## Documentation Index
+
+### Technical Documentation (English)
 
 | Document | Description |
 |----------|-------------|
-| [Architecture](./technical/architecture.md) | System design, request flow, design decisions, limitations |
-| [Backend](./technical/backend.md) | API routes, streaming, export system, system prompt |
-| [Frontend](./technical/frontend.md) | Components, tabs, charts, state management, design system |
-| [Database](./technical/database.md) | 15 models, 15 enums, relationships, query layer, seed data |
-| [Tools](./technical/tools.md) | All 45 tools by category, type system, how to add new tools |
-| [Integrations](./technical/integrations.md) | Google Calendar/Gmail, ElevenLabs, scrapers, n8n, cron |
-| [Deployment](./technical/deployment.md) | Environment variables, Vercel setup, Neon DB, local dev |
+| [Architecture](technical/architecture.md) | System overview, request flow, design decisions |
+| [Backend](technical/backend.md) | API routes, tool system, query layer |
+| [Frontend](technical/frontend.md) | Components, state management, design system |
+| [Database](technical/database.md) | Schema (17 models, 16 enums), relationships, seed data |
+| [Tools](technical/tools.md) | Tool catalog (45 tools), type system, categories |
+| [Integrations](technical/integrations.md) | Google, Twilio, ElevenLabs, web scrapers |
+| [Deployment](technical/deployment.md) | Environment setup, Vercel config, Neon database |
+| [Data Flow](technical/data-flow.md) | End-to-end scenario walkthroughs |
+| [Design Decisions](technical/design-decisions.md) | Architectural rationale and trade-offs |
 
 ### User Documentation (Czech)
 
 | Document | Description |
 |----------|-------------|
-| [Jak to funguje](./user/how-it-works.md) | Jak systém funguje, vysvětlení UI |
-| [Funkce](./user/features.md) | Přehled všech funkcí |
-| [Použití](./user/use-cases.md) | Praktické scénáře krok za krokem |
-| [Co agent umí](./user/agent-capabilities.md) | Schopnosti agenta podle typů dotazů |
-| [FAQ](./user/faq.md) | Časté otázky |
+| [Jak system funguje](user/how-it-works.md) | Prehled systemu a ovladani |
+| [Prakticke scenare](user/use-cases.md) | Krok za krokem priklady |
+| [Funkce](user/features.md) | Katalog vsech funkci |
+| [Co agent umi](user/agent-capabilities.md) | Typy dotazu a moznosti |
+| [FAQ](user/faq.md) | Caste otazky |
+
+---
 
 ## Demo Presentation Guide
 
-When presenting this project:
+1. **Start with a morning briefing** -- type `"Jaky je stav operativy?"` to show the agent pulling cross-domain operational health data
+2. **Explore the Data tab** -- click through the health scoring results, renovation status, and overdue task flags
+3. **Book a showing** -- demonstrate multi-step tool chaining with Calendar + SMS integration
+4. **Generate an investor report** -- trigger PPTX generation and show the download flow
+5. **Open Data Management** -- navigate to `/sprava` to show the CRUD interface for all entities
+6. **Show Automation Dashboard** -- navigate to `/dashboard` to demonstrate monitoring jobs and cron schedules
 
-1. **Start with the morning briefing** — shows multi-tool orchestration and health scoring
-2. **Show a booking workflow** — demonstrates calendar integration and email drafts
-3. **Generate a report + PPTX** — highlights export capabilities
-4. **Visit /sprava** — shows the data management layer
-5. **Check /dashboard** — shows monitoring automation
-6. **Ask about market listings** — demonstrates real scraping + analysis
+---
 
-Key points to emphasize:
-- All data comes from real tools, not LLM hallucination
-- Emails are drafts only — human-in-the-loop safety
-- 45 tools with typed results — not a generic chatbot
-- Czech language throughout — localized for the target market
-- Explainability panel — shows exactly what data was accessed
+## Project Metrics
+
+| Metric | Value |
+|--------|-------|
+| AI tools | 45 |
+| Tool groups | 13 |
+| Database models | 17 |
+| Database enums | 16 |
+| API routes | 10 |
+| Automated cron jobs | 3 |
+| Result display tabs | 6 |
+| External integrations | 4 (Google, Twilio, ElevenLabs, n8n) |
+| Export formats | 3 (PPTX, PDF, CSV) |
+| Max tool steps per turn | 5 |
+
+---
+
+## Cron Jobs
+
+| Job | Schedule | Endpoint | Purpose |
+|-----|----------|----------|---------|
+| Market Monitoring | 5 AM Mon--Fri | `/api/cron/monitoring` | Scrape Sreality and Bezrealitky, deduplicate, persist to DB |
+| Reminder Calls | 5 AM daily | `/api/cron/daily-reminder-calls` | ElevenLabs outbound voice calls for today's showings |
+| Weekly Report | 7 AM Monday | `/api/cron/weekly-report` | Executive PPTX report with KPI slides, emailed via Gmail |
+
+All cron endpoints validate `CRON_SECRET` via the Authorization header.
+
+---
+
+## License
+
+Private project. Not open source.

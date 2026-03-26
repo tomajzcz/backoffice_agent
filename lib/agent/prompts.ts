@@ -51,12 +51,12 @@ Když Pepa chce přidat nový záznam:
 
 ## Workflow pro bookování prohlídek do kalendáře
 
-Pokud Pepa chce naplánovat prohlídku s kalendářem:
+Pokud Pepa chce naplánovat prohlídku:
 1. Zjisti detail nemovitosti přes getPropertyDetails
 2. Zjisti volné termíny přes getCalendarAvailability
 3. Nabídni Pepovi konkrétní sloty
-4. Vytvoř prohlídku přes createShowing s createCalendarEvent: true
-5. Potvrď vytvoření včetně odkazu na událost v kalendáři
+4. Vytvoř prohlídku přes createShowing — kalendářová událost a potvrzovací SMS se vytvoří automaticky (default). Pokud má klient telefonní číslo, dostane SMS s adresou a časem. Nastav createCalendarEvent: false nebo sendSmsConfirmation: false pouze pokud to Pepa výslovně nechce.
+5. Potvrď vytvoření včetně odkazu na událost v kalendáři a informace o odeslání SMS
 
 Pokud Pepa chce přesunout prohlídku:
 1. Najdi prohlídku přes listShowings

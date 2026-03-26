@@ -55,7 +55,14 @@ function getResultSubtitle(r: AgentToolResult): string {
     case "updateLead": return `Lead #${t.lead.id} aktualizován`
     case "createDeal": return `Obchod #${t.deal.id} vytvořen`
     case "updateDeal": return `Obchod #${t.deal.id} aktualizován`
-    case "createShowing": return `Prohlídka #${t.showing.id} naplánována`
+    case "createShowing": {
+      const parts = [`Prohlídka #${t.showing.id} naplánována`]
+      if (t.showing.googleCalendarEventId) parts.push("Kalendář OK")
+      if (t.showing.calendarError) parts.push(`Kalendář: ${t.showing.calendarError}`)
+      if (t.showing.smsSent) parts.push("SMS odesláno")
+      if (t.showing.smsError) parts.push(`SMS: ${t.showing.smsError}`)
+      return parts.join(" · ")
+    }
     case "updateShowing": return `Prohlídka #${t.showing.id} aktualizována`
     case "createCalendarEvent": return `Událost vytvořena · ${t.event.summary}`
     case "updateCalendarEvent": return `Událost aktualizována · ${t.event.summary}`

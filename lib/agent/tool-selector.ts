@@ -54,10 +54,11 @@ const KEYWORD_GROUPS: [string, string[]][] = [
   ["deal", ["CRUD_DEALS"]],
   ["prodej", ["CRUD_DEALS", "ANALYTICS"]],
   ["tržb", ["CRUD_DEALS", "ANALYTICS"]],
-  // Showings
+  // Showings / SMS
   ["prohlíd", ["CRUD_SHOWINGS", "CALENDAR"]],
   ["prohlíž", ["CRUD_SHOWINGS", "CALENDAR"]],
   ["prohlidk", ["CRUD_SHOWINGS", "CALENDAR"]],
+  ["sms", ["CRUD_SHOWINGS", "CALENDAR"]],
   // Calendar
   ["kalendář", ["CALENDAR"]],
   ["kalendar", ["CALENDAR"]],

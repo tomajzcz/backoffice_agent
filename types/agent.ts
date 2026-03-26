@@ -538,6 +538,9 @@ export interface CreateShowingResult {
     status: string
     statusLabel: string
     googleCalendarEventId: string | null
+    calendarError?: string
+    smsSent: boolean
+    smsError?: string
   }
   chartType: "none"
 }

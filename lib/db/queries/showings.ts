@@ -60,7 +60,7 @@ export async function createShowingQuery(data: {
       googleCalendarEventId: data.googleCalendarEventId,
     },
     include: {
-      client: { select: { name: true } },
+      client: { select: { name: true, phone: true } },
       property: { select: { address: true, district: true } },
     },
   })
@@ -92,7 +92,7 @@ export async function getShowingByIdQuery(id: number) {
   return prisma.showing.findUnique({
     where: { id },
     include: {
-      client: { select: { name: true } },
+      client: { select: { name: true, phone: true } },
       property: { select: { address: true, district: true } },
     },
   })

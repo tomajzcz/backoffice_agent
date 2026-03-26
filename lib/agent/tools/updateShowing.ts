@@ -5,6 +5,7 @@ import {
   updateCalendarEvent,
   deleteCalendarEvent,
 } from "@/lib/google/calendar"
+import { sendShowingCancellationSms } from "@/lib/integrations/twilio"
 import { SHOWING_STATUS_LABELS as STATUS_LABELS } from "@/lib/constants/labels"
 import type { UpdateShowingResult } from "@/types/agent"
 
@@ -46,6 +47,20 @@ export const updateShowingTool = tool({
       } catch (e) {
         // Calendar sync failed — continue with DB update
         console.error("Synchronizace s kalendářem se nezdařila:", e)
+      }
+    }
+
+    // Send cancellation SMS if status changed to CANCELLED
+    if (data.status === "CANCELLED" && current.client.phone) {
+      try {
+        await sendShowingCancellationSms({
+          clientName: current.client.name,
+          clientPhone: current.client.phone,
+          propertyAddress: current.property.address,
+          scheduledAt: current.scheduledAt.toISOString(),
+        })
+      } catch (e) {
+        console.error("Nepodařilo se odeslat SMS o zrušení:", e)
       }
     }
 

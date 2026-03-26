@@ -1,162 +1,204 @@
-# Praktické scénáře
+# Praktické scenaře -- krok za krokem
 
-## 1. Ranní briefing
+## 1. Uvod
 
-**Situace**: Pepa začíná pracovní den a chce rychlý přehled.
+Tento dokument obsahuje 8 praktickych scenaru, ktere ukazuji, jak s agentem pracovat v beznem provozu. Kazdy scenar popisuje konkretni situaci, presny dotaz, co agent udela a kde najdete vysledek. Scenare pokryvaji kazdodenni operativu -- od ranniho briefingu pres planovani prohlidek az po spravu dat.
 
-**Dotaz**: "Jaký je stav operativy?"
+---
+
+## 2. Scenar 1: Ranni briefing
+
+**Situace**: Pepa zacina pracovni den a potrebuje rychly prehled stavu operativy.
+
+**Dotaz**: "Jaky je stav operativy?"
 
 **Co se stane**:
-1. Agent spustí kontrolu operativního zdraví (skóre 0–100)
-2. Zkontroluje stav rekonstrukcí (zpoždění, překročení rozpočtu)
-3. Najde zpožděné a blížící se úkoly
-4. Vrátí souhrnný briefing s prioritizovanými problémy
 
-**Výsledek**:
-- Záložka **Graf**: celkové skóre zdraví s rozpisem kategorií
-- Záložka **Odpověď**: textový souhrn s doporučeními
+1. Agent provede scan operativniho zdravi -- vyhodnoti celkove skore na stupnici 0--100.
+2. Zkontroluje stav rekonstrukci -- hleda zpozdeni, prekroceni rozpoctu, aktivni blokatory.
+3. Najde zpozdene ukoly a ukoly s blizicim se terminem.
+4. Zobrazi souhrnne skore s rozpisem kategorii a prioritizovanymi doporucenimi.
 
-**Příklad odpovědi agenta**:
-> Operativní zdraví: 72/100. Hlavní problémy: 3 nemovitosti stagnují v pipeline déle než 30 dní, 2 rekonstrukce mají zpoždění, 5 úkolů je po termínu. Doporučuji se zaměřit na nemovitost na Vinohradech — je ve fázi akvizice už 45 dní.
+**Vysledek**:
 
----
+- Zalozka **Graf**: celkove skore zdravi s rozpisem podle kategorii (rekonstrukce, pipeline, ukoly).
+- Zalozka **Odpoved**: textovy souhrn s konkretnimi doporucenimi, na co se zamerit.
 
-## 2. Příprava na schůzku s investorem
-
-**Situace**: Pepa má odpoledne schůzku s investorem a potřebuje podklady.
-
-**Kroky**:
-
-1. "Ukaž přehled investorů"
-   - → Tabulka investorů s portfoliem a investovanými částkami
-
-2. "Jaká je ziskovost nemovitostí v Praze 2?"
-   - → ROI analýza s grafem podle nemovitostí
-
-3. "Připrav report o výkonnosti za tento kvartál"
-   - → Markdown report v záložce Zpráva
-
-4. "Udělej z toho prezentaci na 5 slidů"
-   - → PPTX ke stažení v záložce Zpráva
-
-5. "Pošli prezentaci na jan.investor@email.cz"
-   - → Email s přílohou v záložce Email ke schválení
-
-**Celý proces**: ~2 minuty místo hodiny manuální práce.
+**Priklad odpovedi agenta**:
+> Operativni zdravi: 72/100. Hlavni problemy: 3 nemovitosti stagnuji v pipeline dele nez 30 dni, 2 rekonstrukce maji zpozdeni, 5 ukolu je po terminu. Doporucuji se zamerit na nemovitost na Vinohradech -- je ve fazi akvizice uz 45 dni.
 
 ---
 
-## 3. Naplánování prohlídky
+## 3. Scenar 2: Priprava na schuzku s investorem
 
-**Situace**: Klient chce vidět byt na Vinohradech.
+**Situace**: Pepa ma odpoledne schuzku s investorem a potrebuje podklady o portfoliu.
 
-**Dotaz**: "Naplánuj prohlídku bytu na Vinohradech s klientem Novákem na příští úterý"
+**Dotaz**: "Priprav prehled portfolia pro investory"
 
 **Co se stane**:
-1. Agent najde nemovitost a klienta v databázi
-2. Zkontroluje dostupnost v Google Kalendáři
-3. Nabídne volné časy
-4. Po potvrzení vytvoří prohlídku v systému
-5. Zapíše událost do Google Kalendáře
-6. Připraví email s pozvánkou
 
-**Výsledek**:
-- Záložka **Data**: detail vytvořené prohlídky
-- Záložka **Email**: návrh pozvánky ke schválení
-- Google Kalendář: nová událost
+1. Agent nacte prehled investoru a jejich portfolii -- ktere nemovitosti vlastni a kolik investovali.
+2. Spocita rentabilitu jednotlivych nemovitosti (ROI, prijem vs. naklady).
+3. Zobrazi data v prehledne tabulce a doplni grafem pro vizualni srovnani.
 
-**Následující den**: Systém automaticky zavolá klientovi s připomínkou (pokud je nastaveno).
+**Vysledek**:
+
+- Zalozka **Data**: tabulka investoru s portfoliem, investovanymi castkami a rentabilitou.
+- Zalozka **Graf**: sloupcovy ci kolacovy graf s porovnanim vykonnosti nemovitosti.
+
+**Navazujici kroky** (volitelne):
+- "Udel z toho prezentaci na 5 slidu" -- agent vygeneruje PPTX ke stazeni.
+- "Posli prezentaci na jan.investor@email.cz" -- agent pripravi email s prilohou ke schvaleni.
 
 ---
 
-## 4. Kontrola rekonstrukce
+## 4. Scenar 3: Naplanovani prohlidky
 
-**Situace**: Pepa chce vědět, jak pokračují rekonstrukce.
+**Situace**: Klient Jan Novak chce videt byt na Vinohradske 15.
 
-**Kroky**:
+**Dotaz**: "Naplanuj prohlidku bytu na Vinohradske 15 pro Jana Novaka na utery v 14:00"
 
-1. "Jaký je stav rekonstrukcí?"
-   - → Přehled aktivních rekonstrukcí podle fáze
-   - → Skóre zdraví rekonstrukcí (0–100)
+**Co se stane**:
 
-2. "Ukaž detail rekonstrukce na Karlíně"
-   - → Kompletní detail: fáze, rozpočet, dodavatel, blokátory, úkoly
+1. Agent najde detail nemovitosti na Vinohradske 15 v databazi.
+2. Zkontroluje dostupnost v Google Kalendari -- overi, ze v pozadovanem case neni jina udalost.
+3. Vytvori zaznam prohlidky v databazi s propojenim na nemovitost a klienta.
+4. Prida udalost do Google Kalendare s adresou a udaji o klientovi.
+5. Odesle SMS potvrzeni klientovi na jeho telefonni cislo z databaze.
+6. Rano v den prohlidky system automaticky provede pripominkovy hovor klientovi (pokud je aktivovano).
 
-3. "Vytvoř úkol: kontaktovat dodavatele ohledně zpoždění"
-   - → Úkol s vazbou na rekonstrukci
+**Vysledek**:
+
+- Zalozka **Data**: kompletni detail vytvorene prohlidky -- datum, cas, nemovitost, klient, stav.
+
+**Dobre vedet**: SMS se posila automaticky pri vytvoreni prohlidky. Pokud by odeslani SMS selhalo (napr. chybne cislo), prohlidka se vytvori normalne a v odpovedi agent upozorni na problem s SMS.
+
+---
+
+## 5. Scenar 4: Kontrola rekonstrukce
+
+**Situace**: Pepa chce vedet, jak pokracuji aktivni rekonstrukce a jestli neco nevyzaduje zasah.
+
+**Dotaz**: "Jak probihaji rekonstrukce?"
+
+**Co se stane**:
+
+1. Agent nacte vsechny aktivni rekonstrukce z databaze.
+2. Zkontroluje zdravi rekonstrukci -- porovnava planovanou a skutecnou casovou osu, rozpocet a blokatory.
+3. Zobrazi seznam rekonstrukci s aktualni fazi, stavem rozpoctu a identifikovanymi problemy.
+
+**Vysledek**:
+
+- Zalozka **Graf**: prehledovy graf zdravi rekonstrukci (skore podle projektu).
+- Zalozka **Data**: tabulka s detaily -- nazev, faze, planovany vs. skutecny rozpocet, zpozdeni.
 
 **Co agent detekuje automaticky**:
-- Překročení plánovaného rozpočtu
-- Zpoždění oproti termínu
-- Aktivní blokátory (čekání na materiál, povolení, apod.)
+- Prekroceni planovaneho rozpoctu.
+- Zpozdeni oproti planovane casove ose.
+- Aktivni blokatory (cekani na material, stavebni povoleni, dodavatele).
+
+**Poznamka**: Pro kompletni detail konkretni rekonstrukce vcetne casove osy fazi prejdete na stranku `/sprava/rekonstrukce/[id]` -- napriklad `/sprava/rekonstrukce/5`. Na teto strance najdete rozepsane jednotlive faze, milniky a fotodokumentaci.
 
 ---
 
-## 5. Analýza nových nabídek na trhu
+## 6. Scenar 5: Analyza novych nabidek na trhu
 
-**Situace**: Pepa chce vědět, co nového se objevilo na trhu.
+**Situace**: Pepa chce vedet, co noveho se objevilo na realitnim trhu v konkretni lokalite.
 
-**Dotaz**: "Co je nového na trhu v Praze 2?"
+**Dotaz**: "Co je noveho na trhu v Holesovicich?"
 
 **Co se stane**:
-1. Agent zkontroluje výsledky monitoringu
-2. Analyzuje nové nabídky — cena, dispozice, plocha, lokalita
-3. Ohodnotí nabídky podle relevance
-4. Prezentuje top příležitosti
 
-**Výsledek**:
-- Záložka **Data**: tabulka nabídek s cenami a odkazy
-- Záložka **Odpověď**: analýza trendu a doporučení
+1. Agent najde monitorovaci ulohy nastavene pro danou lokalitu (Holesovice).
+2. Nacte vysledky posledniho behu monitoringu -- data ze stranek sreality.cz a bezrealitky.cz.
+3. Analyzuje nove nabidky -- u kazde uvede cenu, dispozici, plochu, lokalitu a relevancni skore.
 
-**Jak monitoring funguje**:
-- Automaticky běží každý pracovní den v 5:00
-- Sleduje sreality.cz a bezrealitky.cz
-- Filtruje podle nastavených kritérií (lokalita, cena, typ)
-- Posílá emailové notifikace při nových nabídkách
+**Vysledek**:
 
----
+- Zalozka **Data**: seznam nabidek s cenou, lokalitou, dispozici, plochou a skore relevance.
 
-## 6. Týdenní KPI report
-
-**Situace**: Pepa potřebuje připravit týdenní přehled pro vedení.
-
-**Kroky**:
-
-1. "Ukaž týdenní KPI za posledních 12 týdnů"
-   - → Graf s trendy: nové leady, klienti, uzavřené obchody
-
-2. "Kolik máme nových klientů za Q1?"
-   - → Sloupcový graf podle zdroje akvizice
-
-3. "Připrav report pro vedení"
-   - → Markdown report s klíčovými metrikami
-
-4. "Exportuj jako PDF"
-   - → PDF ke stažení
-
-**Výsledek**: Profesionální report připravený za 1 minutu.
+**Jak monitoring funguje na pozadi**:
+- Automaticky bezi kazdy pracovni den v 5:00 rano.
+- Prochazi sreality.cz a bezrealitky.cz.
+- Filtruje podle nastavenych kriterii (lokalita, cenove rozpeti, typ nemovitosti).
+- Nove nabidky jsou ulozeny do databaze a deduplikovany (stejna nabidka se nezobrazi dvakrat).
 
 ---
 
-## 7. Správa dat mimo chat
+## 7. Scenar 6: Tydenni KPI report
 
-**Situace**: Pepa potřebuje rychle upravit několik záznamů.
+**Situace**: Pepa potrebuje pripravit tydenni prehled klicovych metrik pro vedeni firmy.
 
-**Postup**:
-1. Přejděte na `/sprava` (odkaz v levém panelu)
-2. Vyberte záložku (Nemovitosti, Klienti, Leady...)
-3. Najděte záznam v tabulce (řazení, stránkování)
-4. Klikněte na ikonu úprav → otevře se formulář
-5. Upravte data → Uložit
+**Dotaz**: "Jak vypadaji KPI za poslednich 8 tydnu?"
 
-Tabulky podporují:
-- Řazení podle sloupců
-- Stránkování
-- Filtrování podle stavu (barevné štítky)
-- Formátování měny (CZK), dat a stavů
+**Co se stane**:
 
-## Viz také
+1. Agent nacte tydenni metriky za pozadovane obdobi -- pocet novych leadu, pocet novych klientu, pocet uzavrenych obchodu, celkove trzby.
+2. Zobrazi trend v grafu -- je videt vyvoj jednotlivych metrik v case.
+3. V textove odpovedi shrne klicova cisla a nabidne moznost generovat prezentaci.
 
-- [Jak to funguje](./how-it-works.md) — popis rozhraní
-- [Funkce](./features.md) — kompletní přehled funkcí
-- [Co agent umí](./agent-capabilities.md) — schopnosti agenta
+**Vysledek**:
+
+- Zalozka **Graf**: spojnicovy graf s KPI trendy za poslednich 8 tydnu.
+- Zalozka **Odpoved**: textovy souhrn klicovych cisel a trendu.
+
+**Navazujici kroky** (volitelne):
+- "Priprav z toho report" -- agent vygeneruje Markdown report s klicovymi metrikami.
+- "Exportuj jako prezentaci" -- agent vytvori PPTX ke stazeni.
+
+---
+
+## 8. Scenar 7: Sprava dat mimo chat
+
+**Situace**: Pepa potrebuje rychle upravit nekolik zaznamu, prohlednout si data v tabulce nebo zalozit novy zaznam -- a nechce psat do chatu.
+
+**Popis**: Pro tyto ucely slouzi stranka `/sprava`, kterou najdete v navigaci aplikace.
+
+**Jak stranku pouzit**:
+
+1. **Prepnuti na entitu**: V horni casti stranky jsou zalozky -- Nemovitosti, Klienti, Leady, Obchody, Prohlidky. Kliknete na tu, se kterou chcete pracovat.
+
+2. **Razeni podle sloupce**: Kliknete na zahlavi libovolneho sloupce v tabulce. Prvni kliknuti seradi vzestupne, druhe sestupne.
+
+3. **Filtrovani podle statusu**: U nekterych entit (napr. Nemovitosti, Leady) muzete filtrovat podle stavu -- zobrazit napr. pouze aktivni nemovitosti nebo rozpracovane leady.
+
+4. **Vytvoreni noveho zaznamu**: Kliknete na tlacitko pro vytvoreni noveho zaznamu. Otevre se formular, kde vyplnite potrebne udaje a ulozite.
+
+5. **Uprava existujiciho zaznamu**: U kazdeho radku v tabulce najdete ikonu pro upravu. Po kliknuti se otevre formular s predvyplnenymi daty -- upravte co potrebujete a ulozte.
+
+6. **Detail rekonstrukce**: Pro rekonstrukce existuje specialni detailni stranka na `/sprava/rekonstrukce/[id]`. Najdete tam casovou osu fazi, rozpocet, stav a dalsi informace.
+
+**Tabulky podporuji**:
+- Razeni podle libovolneho sloupce.
+- Strankovani (tabulka se nezahltí, i kdyz je zaznamu hodne).
+- Barevne stitky pro stavy a typy (napr. zelena = aktivni, cervena = zruseno).
+- Formatovani men (CZK), dat a ciselnych hodnot.
+
+---
+
+## 9. Scenar 8: Vytvoreni a sledovani ukolu
+
+**Situace**: Pepa si chce zapsat ukol, ktery nesmi zapomenout -- napriklad zkontrolovat dokumenty pro konkretni nemovitost.
+
+**Dotaz**: "Vytvor ukol: Zkontrolovat dokumenty pro Vinohradskou 15, priorita vysoka, do patku"
+
+**Co se stane**:
+
+1. Agent vytvori ukol v databazi s nazvem "Zkontrolovat dokumenty pro Vinohradskou 15".
+2. Propoji ukol s prislusnou nemovitosti (Vinohradska 15), pokud ji najde v databazi.
+3. Nastavi prioritu na "vysoka" a termin splneni na nejblizsi patek.
+
+**Vysledek**:
+
+- Zalozka **Odpoved**: potvrzeni o vytvoreni ukolu s detaily (nazev, priorita, termin, vazba na nemovitost).
+
+**Dobre vedet**: Pri pristim rannim briefingu (scenar 1) bude tento ukol automaticky zahrnut v prehledu operativniho zdravi. Pokud se blizi jeho termin nebo je po terminu, agent na nej upozorni.
+
+---
+
+## 10. Viz take
+
+- [Jak to funguje](./how-it-works.md) -- popis rozhrani a zakladni orientace v aplikaci
+- [Funkce](./features.md) -- kompletni prehled vsech funkci systemu
+- [Co agent umi](./agent-capabilities.md) -- detailni prehled schopnosti agenta
+- [Caste dotazy](./faq.md) -- odpovedi na nejcastejsi otazky

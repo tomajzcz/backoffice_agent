@@ -26,48 +26,74 @@ After changing `prisma/schema.prisma`, run `db:migrate` then `db:generate`.
 ## Architecture
 
 **Next.js 15 App Router** with split-screen layout:
-- Left panel: Chat (streaming via Vercel AI SDK + Anthropic claude-sonnet-4-6)
+- Left panel: Chat (streaming via Vercel AI SDK `ai@4.3.16` + Anthropic claude-sonnet-4-6)
 - Right panel: Result tabs (Answer, Chart, Data, Report, Email, Logs) — auto-switches based on tool type
 
-**Request flow**: User message → `POST /api/chat` → `streamText()` with 35 tools (max 10 steps per turn) → SSE response → frontend renders tool results in appropriate tab.
+### Request Flow
 
-**Key architectural decisions**:
+User message → `POST /api/chat` → tool selector filters tools by Czech keywords → `streamText()` with filtered tools (max 5 steps) → SSE response → frontend auto-switches result tab.
+
+### Tool Selector (`lib/agent/tool-selector.ts`)
+
+Reduces context by only sending relevant tools per message. Scans user input for Czech keywords (klient, nemovitost, prohlídka, etc.), maps to tool groups (CORE, ANALYTICS, CRUD_PROPERTIES, EMAIL_EXPORT, etc.), always includes CORE group. Falls back to all tools when no keywords match.
+
+### Message History Trimming (`app/api/chat/route.ts`)
+
+Three-layer strategy to stay under context limits:
+1. **Hard cap**: Last 20 messages only
+2. **Payload stripping**: Base64 data URLs → `"[file already delivered]"`, large markdown/HTML → 500 char truncation, chart data arrays → removed entirely
+3. **Array capping**: Large result arrays (properties, leads) → 3 items + `_keyTotal` count metadata
+
+Handles both AI SDK v4's `toolInvocations` format and legacy `content` array with `tool-result` parts.
+
+### Explainability
+
+`buildExplainability()` appends audit metadata (tools used, data sources, filters, record counts) as message annotations. Shown in the "Logs" tab. Agent runs logged async via `logAgentRun()` to `AgentRun` table (fire-and-forget, never blocks response).
+
+### Key Architectural Decisions
+
 - Charts rendered by Recharts from structured `chartData` arrays returned by tools — never LLM-generated images
 - Gmail creates drafts only (never auto-sends) for safety
-- Message history is trimmed (base64 stripped, reports truncated) to manage context window across turns
-- Tools return strongly-typed results matching `AgentToolResult` union in `types/agent.ts`
-- n8n is used only for scheduler/workflow, not as the main UI
+- Tools return strongly-typed results matching `AgentToolResult` discriminated union in `types/agent.ts`
+- Error resilience: SMS/calendar failures in tool execution don't block the primary operation (captured as `smsError`, `calendarError` fields in results)
+- No authentication layer — assumes trusted internal environment
+- `serverExternalPackages: ["pdfkit"]` in next.config (pdfkit must run server-side)
 
 ## Key Paths
 
 | Area | Path |
 |------|------|
 | Chat streaming endpoint | `app/api/chat/route.ts` |
-| All 35 tool definitions | `lib/agent/tools/` (each tool is its own file, re-exported from `index.ts`) |
+| Tool definitions (35 tools) | `lib/agent/tools/` (each tool = own file, re-exported from `index.ts`) |
+| Tool selector (keyword routing) | `lib/agent/tool-selector.ts` |
 | System prompt (Czech) | `lib/agent/prompts.ts` |
-| DB schema (11 models, 8 enums) | `prisma/schema.prisma` |
+| DB schema | `prisma/schema.prisma` |
 | DB query functions | `lib/db/queries/` (one file per entity) |
 | Seed script (faker) | `prisma/seed.ts` |
 | Tool result types (40+) | `types/agent.ts` |
 | Chart components | `components/charts/` |
 | Results panel + tabs | `components/results/ResultsPanel.tsx` |
-| Google OAuth setup | `lib/google/auth.ts` |
+| Google OAuth / Calendar / Gmail | `lib/google/auth.ts`, `calendar.ts`, `gmail.ts` |
 | Czech enum labels & colors | `lib/constants/labels.ts` |
 | PPTX generation | `lib/export/pptx.ts` |
+| PDF generation | `lib/export/pdf.ts` |
+| File download tokens | `lib/export/file-store.ts`, `pptx-store.ts` |
 | Web scraping (sreality, bezrealitky) | `lib/scraper/` |
+| Twilio SMS integration | `lib/integrations/twilio.ts` |
+| ElevenLabs voice calls | `lib/integrations/elevenlabs.ts` |
 | Data management UI | `app/sprava/` |
-| Monitoring dashboard UI | `app/dashboard/` |
-| Vercel cron config | `vercel.json` (monitoring at 5 AM weekdays) |
+| Monitoring dashboard | `app/dashboard/` |
 
 ## Adding a New Tool
 
-1. Create `lib/agent/tools/myNewTool.ts` with Zod schema for parameters and a typed result
-2. Define the tool using Vercel AI SDK's `tool()` function with `parameters` (Zod) and `execute` async function
-3. Add result type to `types/agent.ts` and include in `AgentToolResult` union
-4. Export from `lib/agent/tools/index.ts`
-5. If the tool returns chart data, add/reuse a chart component in `components/charts/`
-6. Update `components/results/ResultsPanel.tsx` tab switching logic if new result type needs special rendering
-7. Update system prompt in `lib/agent/prompts.ts` if the agent needs guidance on when/how to use the tool
+1. Create `lib/agent/tools/myNewTool.ts` — use `tool()` from `ai`, Zod for `parameters`, async `execute` returning a typed result object with `toolName`, `chartType`, and `chartData`
+2. Add result type to `types/agent.ts` and include in `AgentToolResult` union
+3. Export from `lib/agent/tools/index.ts`
+4. Add Czech keyword mappings in `lib/agent/tool-selector.ts` (register in `TOOL_GROUPS` and `KEYWORD_GROUPS`)
+5. If chart data, add/reuse a chart component in `components/charts/`
+6. Update `components/results/ResultsPanel.tsx` tab-switching logic if new result type needs special rendering
+7. Update system prompt in `lib/agent/prompts.ts` if agent needs guidance on when/how to use the tool
+8. If result contains large arrays, ensure trimming in `trimToolResult()` handles them
 
 ## Tool Categories (35 total)
 
@@ -78,13 +104,43 @@ After changing `prisma/schema.prisma`, run `db:migrate` then `db:generate`.
 - **CRUD** (16): list/create/update for Properties, Clients, Leads, Deals, Showings
 - **Other** (2): createAgentTask, getPropertyDetails
 
+## Integrations
+
+**Google Calendar**: OAuth2 client cached as global singleton. Free/busy queries for slot finding. Working hours 9 AM–6 PM, weekends skipped. Events store `googleCalendarEventId` on Showing records.
+
+**Gmail**: Draft-only (never sends). MIME multipart for attachments (PPTX emails). Base64-encoded UTF-8 subject lines.
+
+**Twilio SMS**: Sends confirmations on showing creation/update/cancellation. E.164 phone format. Czech message templates. Failures captured in result, don't block operation.
+
+**ElevenLabs**: Outbound AI voice calls for showing reminders. Triggered by daily cron, not by agent tools directly.
+
 ## Database
 
-PostgreSQL via Prisma ORM. Path alias `@/*` maps to project root.
+PostgreSQL via Prisma ORM. `@/*` path alias maps to project root. Prisma client singleton in `lib/db/prisma.ts` (global cache prevents multiple clients in dev).
 
-Seed data volumes: 45 clients, 150 leads, 55 properties (15 intentionally missing renovation data), 22 deals, 40 showings, 18 weekly reports, 2 scheduled monitoring jobs.
+**Query pattern**: One file per entity in `lib/db/queries/`. Query functions return typed interfaces (e.g., `ClientRow`, `PropertyRow`). Czech label lookups applied in query layer, not tools. Prisma `where` conditions built dynamically from tool parameters.
 
-Prisma client singleton: `lib/db/prisma.ts`.
+Seed data: 45 clients, 150 leads, 55 properties (15 intentionally missing renovation data), 22 deals, 40 showings, 18 weekly reports, 2 scheduled monitoring jobs.
+
+## Cron Jobs (Vercel)
+
+All validate `CRON_SECRET` via Authorization header (Vercel-injected).
+
+| Job | Schedule | Endpoint | Purpose |
+|-----|----------|----------|---------|
+| Monitoring | 5 AM Mon–Fri | `/api/cron/monitoring` | Web scraping (Sreality, Bezrealitky), dedup, DB persistence |
+| Reminder calls | 5 AM daily | `/api/cron/daily-reminder-calls` | ElevenLabs outbound calls for today's showings |
+| Weekly report | 7 AM Monday | `/api/cron/weekly-report` | Executive PPTX report with KPI slides + email |
+
+## Routes
+
+**Pages**: `/` (chat), `/dashboard` (monitoring + automation), `/sprava` (CRUD management), `/sprava/rekonstrukce/[id]` (renovation detail)
+
+**API**: `/api/chat`, `/api/cron/*`, `/api/agent-runs`, `/api/email`, `/api/export` (file downloads), `/api/n8n-webhook`
+
+## Export System
+
+PPTX and PDF generated server-side. Output stored temporarily via token-based file store (`lib/export/file-store.ts`, `pptx-store.ts`). Download tokens prevent data URLs from bloating chat history (trimmed to `"[file already delivered]"`).
 
 ## Environment Variables
 
@@ -97,17 +153,11 @@ GOOGLE_CLIENT_SECRET=
 GOOGLE_REFRESH_TOKEN=
 N8N_BASE_URL=           # Optional, for monitoring webhooks
 N8N_WEBHOOK_SECRET=     # Optional
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=
+TWILIO_PHONE_NUMBER=    # E.164 format (e.g., +420...)
 ```
 
 ## Deployment
 
-Vercel auto-deploys from `main` branch. DB on Neon. Vercel cron triggers `/api/cron/monitoring` at 5 AM Mon–Fri.
-
-## Success Criteria
-
-- End-to-end functionality with real tools (no fake responses)
-- UI feels like a product, not a chatbot demo
-- Charts and reports are real outputs from structured data
-- Google integrations (Calendar + Gmail) working
-- PPTX export functional
-- Monitoring workflows connected via n8n
+Vercel auto-deploys from `main` branch. DB on Neon. TypeScript strict mode. Node 20 LTS.

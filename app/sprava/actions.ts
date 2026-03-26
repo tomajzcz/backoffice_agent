@@ -17,6 +17,7 @@ import {
   getCalendarFreeSlots,
   buildShowingEventDescription,
 } from "@/lib/google/calendar"
+import { sendShowingConfirmationSms, sendShowingCancellationSms } from "@/lib/integrations/twilio"
 import { prisma } from "@/lib/db/prisma"
 
 export type FormOption = { id: number; label: string }
@@ -317,6 +318,20 @@ export async function createShowingAction(data: {
       // Kalendářový event se nepodařilo vytvořit — prohlídka je uložena
     }
 
+    // Odeslat potvrzovací SMS (best-effort)
+    try {
+      if (showing.client.phone) {
+        await sendShowingConfirmationSms({
+          clientName: showing.client.name,
+          clientPhone: showing.client.phone,
+          propertyAddress: showing.property.address,
+          scheduledAt: data.scheduledAt,
+        })
+      }
+    } catch {
+      // SMS se nepodařilo odeslat — prohlídka je uložena
+    }
+
     revalidatePath("/sprava")
     return { success: true, data: { id: showing.id } }
   } catch (e) { return handleError(e) }
@@ -326,6 +341,36 @@ export async function updateShowingAction(id: number, data: {
   status?: string; scheduledAt?: string; notes?: string
 }): Promise<ActionResult> {
   try {
+    // Při zrušení: smazat kalendář + poslat SMS
+    if (data.status === "CANCELLED") {
+      const showing = await getShowingByIdQuery(id)
+      if (showing) {
+        // Smazat kalendářovou událost (best-effort)
+        if (showing.googleCalendarEventId) {
+          try {
+            await deleteCalendarEvent(showing.googleCalendarEventId)
+          } catch {
+            // Kalendářový event se nepodařilo smazat — pokračovat
+          }
+          data = { ...data }
+          ;(data as Record<string, unknown>).googleCalendarEventId = null
+        }
+        // Poslat SMS o zrušení (best-effort)
+        try {
+          if (showing.client.phone) {
+            await sendShowingCancellationSms({
+              clientName: showing.client.name,
+              clientPhone: showing.client.phone,
+              propertyAddress: showing.property.address,
+              scheduledAt: showing.scheduledAt.toISOString(),
+            })
+          }
+        } catch {
+          // SMS se nepodařilo odeslat — pokračovat
+        }
+      }
+    }
+
     await updateShowingQuery(id, data)
     revalidatePath("/sprava")
     return { success: true, data: { id } }
@@ -336,11 +381,27 @@ export async function deleteShowingAction(id: number): Promise<ActionResult> {
   try {
     // Načíst prohlídku a smazat kalendářový event, pokud existuje
     const showing = await getShowingByIdQuery(id)
-    if (showing?.googleCalendarEventId) {
+    if (showing) {
+      if (showing.googleCalendarEventId) {
+        try {
+          await deleteCalendarEvent(showing.googleCalendarEventId)
+        } catch {
+          // Kalendářový event se nepodařilo smazat — pokračovat
+        }
+      }
+
+      // Poslat SMS o zrušení (best-effort)
       try {
-        await deleteCalendarEvent(showing.googleCalendarEventId)
+        if (showing.client.phone) {
+          await sendShowingCancellationSms({
+            clientName: showing.client.name,
+            clientPhone: showing.client.phone,
+            propertyAddress: showing.property.address,
+            scheduledAt: showing.scheduledAt.toISOString(),
+          })
+        }
       } catch {
-        // Kalendářový event se nepodařilo smazat — pokračovat
+        // SMS se nepodařilo odeslat — pokračovat
       }
     }
 

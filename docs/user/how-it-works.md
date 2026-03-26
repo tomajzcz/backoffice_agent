@@ -1,191 +1,168 @@
 # Jak systém funguje
 
-## Co to je
+## 1. Co je Back Office Agent
 
-Back Office Agent je AI asistent pro správu realitní kanceláře v Praze. Místo přepínání mezi tabulkami, e-mailem, kalendářem a realitními portály komunikujete s jedním chatem, který vše zvládne za vás.
+Back Office Agent je AI asistent pro správu realitní kanceláře v Praze. Slouží jako centrální rozhraní, které spojuje databázi nemovitostí, klientů, obchodů, kalendář, email, monitoring trhu a další systémy do jednoho chatu.
 
-## Rozvržení obrazovky
+**Kdo je Pepa:** Back office manažer, který denně řeší desítky operativních úkolů -- od plánování prohlídek přes přípravu reportů až po sledování stavu obchodů. Místo přepínání mezi tabulkami, emailem, kalendářem a realitními portály komunikuje s jedním AI asistentem, který vše zvládne za něj.
 
-Aplikace má dvě části vedle sebe:
+**Jak agent pomáhá:**
 
-| Levý panel (Chat) | Pravý panel (Výsledky) |
-|-------------------|----------------------|
-| Textový vstup pro dotazy | 6 záložek s výsledky |
-| Historie konverzace | Automaticky se přepíná podle typu odpovědi |
-| Navrhované dotazy (na začátku) | Kontextový popis výsledku |
-| Navigace na Správu a Dashboard | |
+- Odpovídá na dotazy o stavu kanceláře, klientech, nemovitostech a obchodech
+- Vytváří a upravuje záznamy v databázi (klienti, nemovitosti, prohlídky, úkoly)
+- Generuje reporty, prezentace a exporty (PPTX, PDF, CSV)
+- Komunikuje s klienty -- odesílá SMS potvrzení, připravuje emaily, spouští hlasové připomínky
+- Plánuje události v Google Kalendáři
+- Sleduje trh na realitních portálech (sreality.cz, bezrealitky.cz)
 
-## Jak komunikovat s agentem
+Agent má k dispozici 45 nástrojů ve 13 kategoriích a vždy odpovídá česky.
 
-Pište česky, přirozeným jazykem. Agent rozumí kontextu a sám vybere správné nástroje.
+---
+
+## 2. Rozložení obrazovky
+
+Aplikace má split-screen rozložení -- dva panely vedle sebe, oba viditelné současně:
+
+| Levý panel -- Chat | Pravý panel -- Výsledky |
+|---------------------|--------------------------|
+| Vstupní pole pro psaní dotazů | 6 záložek s výsledky (viz sekce 5) |
+| Historie konverzace s agentem | Automatické přepínání záložek podle typu odpovědi |
+| 8 navrhovaných dotazů (při prázdném chatu) | Tabulky, grafy, reporty, emaily |
+| Tlačítko hlasového vstupu (mikrofon) | Možnost stažení exportů |
+| Navigace na Správu dat a Dashboard | Panel transparentnosti (logy) |
+
+Levý panel má šířku 400 px. Pravý panel zabírá zbytek obrazovky a přizpůsobuje se obsahu odpovědi.
+
+---
+
+## 3. Jak komunikovat s agentem
+
+Pište česky, přirozeným jazykem. Agent rozumí kontextu a sám vybere správné nástroje pro splnění požadavku.
 
 **Příklady dobrých dotazů:**
+
 - "Jaký je stav operativy?"
-- "Kolik máme nových klientů tento kvartál?"
-- "Naplánuj prohlídku bytu na Vinohradech na příští úterý"
-- "Připrav prezentaci pro investory"
+- "Kolik máme aktivních klientů?"
+- "Naplánuj prohlídku na Vinohradech na příští úterý v 10:00"
+- "Připrav týdenní report"
+- "Vytvoř email pro klienta Nováka s pozvánkou na prohlídku"
 - "Co je nového na trhu v Praze 2?"
-- "Vytvoř úkol: zkontrolovat stav rekonstrukce na Karlíně"
+- "Ukaž graf leadů za poslední kvartál"
+- "Zkontroluj stav rekonstrukce na Karlíně"
 
-**Tipy:**
-- Buďte konkrétní — "klienti za Q1 2025" je lepší než "ukaž mi klienty"
-- Agent zvládá složité požadavky — "najdi volný termín, zapiš prohlídku a připrav email"
-- Pokud odpověď není úplná, ptejte se dál — agent si pamatuje kontext konverzace
+**Tipy pro lepší výsledky:**
 
-## Co se děje na pozadí
+- Buďte konkrétní -- "klienti za Q1 2025" je lepší než "ukaž mi klienty"
+- Zmiňujte jména, data, adresy a čtvrti -- agent díky nim přesně najde správné záznamy
+- Agent zvládá složené požadavky -- "najdi volný termín, zapiš prohlídku a pošli SMS klientovi"
+- Pokud odpověď není úplná, ptejte se dál -- agent si pamatuje kontext celé konverzace
 
-Když zadáte dotaz:
+**Navrhované dotazy:** Při prázdném chatu se zobrazí 8 předpřipravených dotazů. Kliknutím na některý z nich se dotaz automaticky odešle agentovi. Slouží jako inspirace pro nové uživatele.
 
-1. **Agent přijme vaši zprávu** a rozhodne, které nástroje potřebuje
-2. **Spustí nástroje** — dotazy do databáze, Google Kalendáře, scraperů trhu
-3. **Získá skutečná data** — nikdy si nic nevymýšlí
-4. **Zpracuje výsledky** a vrátí je ve správném formátu
-5. **Pravý panel se přepne** na příslušnou záložku
+---
 
-Celý proces trvá obvykle 3–15 sekund, v závislosti na složitosti dotazu.
+## 4. Co se děje na pozadí
 
-## Záložky výsledků
+Když zadáte dotaz, proběhne následující:
 
-| Záložka | Ikona | Co zobrazuje |
-|---------|-------|-------------|
-| **Odpověď** | 💬 | Textová odpověď agenta + panel transparentnosti (jaké nástroje byly použity) |
-| **Data** | 📊 | Tabulky s daty — klienti, nemovitosti, leady, obchody, prohlídky |
-| **Graf** | 📈 | Vizualizace — sloupcové a čárové grafy |
-| **Zpráva** | 📄 | Reporty a prezentace — s možností stažení (PDF, PPTX) |
-| **Email** | ✉️ | Návrhy emailů — ke schválení před odesláním |
-| **Logy** | 📋 | Historie volání nástrojů — pro kontrolu, co agent dělal |
+1. **Napíšete dotaz** -- zadáte text do vstupního pole (nebo použijete hlasový vstup) a odešlete
+2. **Agent vybere relevantní nástroje** -- z 45 dostupných nástrojů automaticky zvolí ty, které odpovídají vašemu dotazu (např. dotaz o klientech aktivuje databázové nástroje, dotaz o kalendáři aktivuje Google Calendar nástroje)
+3. **Nástroje provedou operace** -- spustí se dotazy do databáze, volání Google Kalendáře, scrapování realitních portálů nebo generování dokumentů
+4. **Agent sestaví odpověď v češtině** -- zpracuje výsledky z nástrojů a formuluje srozumitelnou odpověď
+5. **Výsledky se zobrazí v odpovídající záložce** -- pravý panel se automaticky přepne na záložku, která nejlépe odpovídá typu výsledku (tabulka, graf, report, email)
 
-Záložky se přepínají automaticky, ale můžete na ně kliknout i ručně.
+Celý proces trvá obvykle 3--15 sekund v závislosti na složitosti dotazu. Agent nikdy nevymýšlí data -- vždy pracuje se skutečnými záznamy z databáze a externích služeb.
 
-## Další stránky aplikace
+---
 
-### Správa dat (`/sprava`)
+## 5. Záložky výsledků
 
-Přímý přístup k datům bez chatu. Devět záložek:
+Pravý panel obsahuje 6 záložek. Agent automaticky přepne na tu správnou, ale můžete na libovolnou záložku kliknout i ručně.
 
-1. **Nemovitosti** — seznam, vytvoření, úprava nemovitostí
-2. **Klienti** — správa klientů
-3. **Leady** — sledování potenciálních klientů
-4. **Obchody** — přehled obchodů a jejich stav
-5. **Prohlídky** — plánované a dokončené prohlídky
-6. **Úkoly** — úkoly s prioritou a termínem
-7. **Investoři** — portfolio investorů
-8. **Dokumenty** — dokumenty k nemovitostem
-9. **Rekonstrukce** — přehled a řízení rekonstrukcí (s detailní stránkou)
+| Záložka | Co zobrazuje | Kdy se aktivuje |
+|---------|-------------|-----------------|
+| **Odpověď** | Textová odpověď agenta s panelem transparentnosti | Vždy -- každá odpověď se zobrazí zde |
+| **Data** | Tabulky, seznamy a detaily záznamů (klienti, nemovitosti, leady, obchody, prohlídky) | Při dotazech na data -- "ukaž klienty", "detail nemovitosti" |
+| **Graf** | Sloupcové a čárové grafy s vizualizací dat | Při analytických dotazech -- "graf leadů", "timeline obchodů" |
+| **Zpráva** | Markdown reporty, PPTX prezentace ke stažení | Při generování reportů -- "připrav týdenní report", "generuj prezentaci" |
+| **Email** | Náhled emailového konceptu (předmět, příjemce, tělo) s možností schválení nebo úpravy | Při vytváření emailů -- "napiš email klientovi" |
+| **Logy** | Transparentnost: jaké nástroje byly použity, z jakých zdrojů data pocházejí, kolik záznamů bylo nalezeno | Vždy dostupné -- pro kontrolu, co agent dělal |
 
-Každá záložka má tabulku s řazením, stránkováním a možností editace.
+---
 
-#### Rekonstrukce — podrobně
+## 6. Další stránky aplikace
 
-Záložka Rekonstrukce zobrazuje tabulku všech rekonstrukcí s klíčovými sloupci: nemovitost, čtvrť, fáze, status, začátek, plánovaný konec, zpoždění, počet otevřených úkolů a počet úkolů po termínu. Řádky se vizuálně odliší — červeně pokud je rekonstrukce zpožděná, žlutě pokud má úkoly po termínu.
+Kromě hlavního chatu (stránka `/`) jsou k dispozici dvě další stránky:
 
-**Kliknutím na řádek** se otevře detailní stránka rekonstrukce (`/sprava/rekonstrukce/{id}`), která obsahuje:
+### Správa dat (/sprava)
 
-**Hlavička:**
-- Adresa nemovitosti, čtvrť, ID rekonstrukce, počet dní od zahájení
-- Štítky: aktuální fáze, status, a "Zpožděno" pokud je po termínu
+CRUD rozhraní pro přímou práci s daty bez použití chatu. Stránka obsahuje záložky pro jednotlivé entity:
 
-**Varování:**
-- Systém automaticky zobrazuje varování podle stavu — rekonstrukce po termínu, překročený rozpočet, zpožděné úkoly, chybějící dodavatel, chybějící další krok
+| Záložka | Obsah |
+|---------|-------|
+| **Nemovitosti** | Seznam, vytvoření a úprava nemovitostí -- adresa, typ, cena, čtvrť, stav |
+| **Klienti** | Správa klientů -- jméno, kontakt, typ (kupující/prodávající), stav |
+| **Leady** | Sledování potenciálních klientů a jejich konverze |
+| **Obchody** | Přehled obchodů, jejich stav a hodnota |
+| **Prohlídky** | Plánované a dokončené prohlídky s vazbou na klienta a nemovitost |
+| **Úkoly** | Úkoly s prioritou, termínem a zodpovědnou osobou |
+| **Rekonstrukce** | Přehled a řízení rekonstrukcí |
 
-**Přehledová karta:**
-- Datum zahájení a plánovaného dokončení
-- Vlastník, dodavatel
-- Další krok, blokátory (červeně)
+Každá záložka nabízí tabulku s řazením podle sloupců, filtrováním a stránkováním. Záznamy lze vytvářet, upravovat i mazat přímo v rozhraní.
 
-**Rozpočet:**
-- Plánovaný a skutečný rozpočet v CZK
-- Ukazatel čerpání s barevnou škálou: zelená (< 80%), žlutá (80–100%), červená (> 100%)
+**Detail rekonstrukce (/sprava/rekonstrukce/[id])** -- kliknutím na řádek rekonstrukce se otevře podrobná stránka s:
 
-**Fázový ukazatel:**
-- Vizuální průběh 8 fází: Plánování → Bourání → Hrubé práce → Instalace → Povrchy → Dokončení → Předání → Hotovo
-- Tlačítko "Další fáze →" pro posun do další fáze (pouze u aktivních rekonstrukcí)
+- Časovou osou 8 fází (Plánování, Bourání, Hrubé práce, Instalace, Povrchy, Dokončení, Předání, Hotovo)
+- Přehledem rozpočtu (plánovaný vs. skutečný) s barevným ukazatelem čerpání
+- Seznamem napojených úkolů
+- Varováními (překročený rozpočet, zpožděné úkoly, chybějící dodavatel)
 
-**Úkoly:**
-- Tabulka úkolů napojených na rekonstrukci (název, status, priorita, termín, zodpovědný)
-- Úkoly po termínu jsou zvýrazněny červeně
-- Tlačítko **"Přidat úkol"** — vytvoří nový úkol, který je automaticky propojen s touto rekonstrukcí i její nemovitostí
+### Automatizace (/dashboard)
 
-#### Propojení rekonstrukcí a úkolů
+Stránka pro správu automatizovaných procesů. Obsahuje následující sekce:
 
-Úkoly (AgentTask) mají vazbu na tři typy entit — nemovitost, obchod, nebo rekonstrukci. Jde o polymorfní vazbu:
+**Monitoring trhu** -- naplánované scrapovací úlohy, které automaticky sledují nové nabídky na sreality.cz a bezrealitky.cz. Každá úloha má konfiguraci filtrů (městská část, typ nemovitosti, cenový rozsah, dispozice, plocha) a emailovou adresu pro notifikace. Úlohy běží každý pracovní den v 5:00.
 
-- Každý úkol může být navázán na **jednu rekonstrukci** přes `renovationId`
-- Při vytvoření úkolu z detailu rekonstrukce se `renovationId` a `propertyId` nastaví automaticky
-- Při smazání rekonstrukce se navázané úkoly neodstraní — pouze se odpojí (renovationId se nastaví na null)
-- Agent v chatu dokáže vytvářet úkoly s vazbou na rekonstrukci (např. "Vytvoř úkol pro rekonstrukci na Karlíně: objednat materiál")
-- V ranním briefingu agent kontroluje zpožděné úkoly u rekonstrukcí a zahrne je do přehledu
+**Připomínkové hovory** -- logy denních hlasových připomínek klientům před prohlídkami. Systém automaticky volá přes ElevenLabs Voice AI v češtině a sděluje klientovi čas, datum a adresu prohlídky. Tabulka zobrazuje stav každého hovoru (zahájen, selhán, přeskočen).
 
-### Automatizace (`/dashboard`)
+**Týdenní reporty** -- historie automaticky generovaných prezentací s KPI a přehledy za uplynulý týden.
 
-Stránka se dvěma záložkami pro automatizované procesy.
+Automatizace lze spouštět i manuálně tlačítkem "Spustit teď" pro testování nebo mimo obvyklý čas.
 
-#### Monitoring trhu
+---
 
-Nastavené úlohy pro automatické sledování nových nabídek na sreality.cz a bezrealitky.cz. Každá úloha má:
-- Název a popis
-- Cron plán (výchozí: každý pracovní den v 5:00)
-- Konfiguraci filtrů (městská část, typ nemovitosti, cenový rozsah, dispozice, plocha)
-- Emailovou adresu pro notifikace
+## 7. Hlasový vstup
 
-Záložka zobrazuje seznam úloh, jejich stav (aktivní/pozastaveno/chyba), datum posledního běhu a tlačítko pro manuální spuštění. Pod každou úlohou jsou výsledky — nalezené nabídky s cenou, lokalitou a odkazem na portál.
+Na pravé straně vstupního pole je tlačítko mikrofonu.
 
-#### Připomínkové hovory
+1. Klikněte na ikonu mikrofonu
+2. Mluvte česky -- systém rozpoznává průběžně
+3. Text se automaticky přepíše do vstupního pole
+4. Odešlete dotaz jako běžně (klávesa Enter nebo tlačítko odeslat)
 
-Systém automaticky volá klientům, kteří mají v daný den naplánovanou prohlídku. Cílem je připomenout jim termín a adresu.
+Hlasový vstup podporuje průběžné rozpoznávání -- text se zobrazuje již během mluvení. Funguje v prohlížečích Chrome a Edge.
 
-**Jak to funguje krok za krokem:**
+---
 
-1. Každý den v **5:00 ráno UTC** (7:00 pražského času) se spustí Vercel cron job
-2. Systém najde všechny prohlídky naplánované na tento den se stavem **SCHEDULED**
-3. Pro každou prohlídku zkontroluje, zda klient již nebyl volán (ochrana proti duplicitám)
-4. Normalizuje české telefonní číslo do mezinárodního formátu (+420...)
-5. Zavolá klientovi přes **ElevenLabs Voice AI** — hovor probíhá v češtině
-6. Hlasový agent sdělí klientovi:
-   - jeho jméno
-   - adresu nemovitosti
-   - čas a datum prohlídky
-7. Výsledek hovoru se zaznamená do logu
+## 8. Panel transparentnosti (Logy)
 
-**Stavy hovorů:**
+Záložka Logy slouží k ověření, že agent pracuje se správnými daty. Při každé odpovědi zobrazuje:
 
-| Stav | Barva | Význam |
-|------|-------|--------|
-| **PENDING** | Žlutá | Hovor vytvořen, čeká na zahájení |
-| **INITIATED** | Zelená | Hovor úspěšně zahájen přes ElevenLabs |
-| **FAILED** | Červená | Hovor se nezdařil (chyba API, nedostupné číslo) |
-| **NO_PHONE** | Šedá | Klient nemá telefonní číslo nebo ho nelze normalizovat |
-| **SKIPPED** | Šedá | Klient byl již dnes volán (duplicita) |
+| Informace | Popis |
+|-----------|-------|
+| **Použité nástroje** | Které z 45 nástrojů agent zavolal pro splnění dotazu |
+| **Datové zdroje** | Odkud data pocházejí (databáze, Google Calendar, realitní portály) |
+| **Počty záznamů** | Kolik záznamů bylo nalezeno a zpracováno |
+| **Aplikované filtry** | Jaké parametry a podmínky byly použity při dotazování |
+| **Omezení výsledku** | Zda byl výsledek zkrácen (např. zobrazeno 10 z 50 záznamů) |
 
-**Tabulka logů zobrazuje:**
-- Datum hovoru
-- Jméno klienta
-- Telefonní číslo (normalizované)
-- Adresu nemovitosti
-- Čas prohlídky
-- Stav hovoru (s barevným štítkem)
-- U selhání: důvod chyby
+Panel transparentnosti je dostupný u každé odpovědi agenta. Slouží ke kontrole, že agent hledal ve správných datech a použil správné filtry -- můžete tak ověřit spolehlivost každé odpovědi.
 
-Hovory lze spustit i manuálně tlačítkem **"Spustit teď"** na stránce Automatizace — to je užitečné pro testování nebo pokud chcete hovory zahájit mimo obvyklý čas.
+---
 
-**Důležité:** Systém nikdy nevolá dvakrát pro stejnou prohlídku v jeden den. Pokud cron job nebo manuální spuštění proběhne opakovaně, existující hovory jsou přeskočeny.
+## 9. Viz také
 
-## Hlasový vstup
-
-Na pravé straně vstupního pole je tlačítko mikrofonu. Klikněte a mluvte česky — text se přepíše do pole. Funguje v prohlížečích Chrome a Edge.
-
-## Panel transparentnosti
-
-V záložce "Odpověď" je sekce, která ukazuje:
-- **Použité nástroje** — které nástroje agent zavolal
-- **Zdroje dat** — odkud data pocházejí (databáze, Google Calendar, apod.)
-- **Počty záznamů** — kolik dat bylo zpracováno
-- **Filtry** — jaké parametry byly použity
-
-Toto slouží k ověření, že agent pracuje se správnými daty.
-
-## Viz také
-
-- [Funkce](./features.md) — přehled všech funkcí
-- [Použití](./use-cases.md) — konkrétní scénáře krok za krokem
-- [Co agent umí](./agent-capabilities.md) — schopnosti agenta
+- [Funkce](./features.md) -- přehled všech funkcí systému
+- [Použití](./use-cases.md) -- konkrétní scénáře krok za krokem
+- [Co agent umí](./agent-capabilities.md) -- kompletní přehled schopností agenta
+- [Často kladené otázky](./faq.md) -- odpovědi na běžné dotazy

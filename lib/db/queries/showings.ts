@@ -99,5 +99,8 @@ export async function getShowingByIdQuery(id: number) {
 }
 
 export async function deleteShowingQuery(id: number) {
-  return prisma.showing.delete({ where: { id } })
+  return prisma.$transaction([
+    prisma.callLog.deleteMany({ where: { showingId: id } }),
+    prisma.showing.delete({ where: { id } }),
+  ])
 }

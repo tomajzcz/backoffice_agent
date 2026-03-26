@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid type" }, { status: 400 })
     }
 
-    const token = storeFile(buffer, PREFIX)
+    const token = await storeFile(buffer, PREFIX)
     const filename = buildTimestampedFilename(title, "pdf")
 
     return NextResponse.json({ token, filename })
@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Missing token" }, { status: 400 })
   }
 
-  const buffer = getFile(token, PREFIX)
+  const buffer = await getFile(token, PREFIX)
   if (!buffer) {
     return NextResponse.json({ error: "Token expired or not found" }, { status: 404 })
   }

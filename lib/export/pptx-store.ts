@@ -5,10 +5,10 @@ import { storeFile, getFile } from "./file-store"
 
 const PREFIX = "pptx-"
 
-export function storePptx(buffer: Buffer): string {
+export async function storePptx(buffer: Buffer): Promise<string> {
   return storeFile(buffer, PREFIX)
 }
 
-export function getPptx(token: string): Buffer | null {
+export async function getPptx(token: string): Promise<Buffer | null> {
   return getFile(token, PREFIX)
 }

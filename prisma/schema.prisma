@@ -461,3 +461,16 @@ model Renovation {
   @@index([isDelayed])
   @@map("renovations")
 }
+
+model FileToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  prefix    String   @default("")
+  data      String   @db.Text
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([expiresAt])
+  @@map("file_tokens")
+}

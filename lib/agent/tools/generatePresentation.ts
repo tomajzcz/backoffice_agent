@@ -247,7 +247,7 @@ export const generatePresentationTool = tool({
 
     try {
       const buffer = await buildPptxBuffer(slides)
-      const token = storePptx(buffer)
+      const token = await storePptx(buffer)
       const downloadUrl = `/api/export/pptx?token=${token}&filename=${encodeURIComponent(title)}`
 
       return {

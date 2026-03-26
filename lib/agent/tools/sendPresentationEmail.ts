@@ -30,7 +30,7 @@ export const sendPresentationEmailTool = tool({
   }),
   execute: async ({ to, subject, body, pptxToken, filename }): Promise<SendPresentationEmailResult> => {
    try {
-    const buffer = getPptx(pptxToken)
+    const buffer = await getPptx(pptxToken)
     if (!buffer) {
       return {
         toolName: "sendPresentationEmail",

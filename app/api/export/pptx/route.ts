@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     }
 
     const buffer = await buildPptxBuffer(slides)
-    const token = storePptx(buffer)
+    const token = await storePptx(buffer)
 
     return NextResponse.json({ token, filename })
   } catch (err) {
@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Missing token" }, { status: 400 })
   }
 
-  const buffer = getPptx(token)
+  const buffer = await getPptx(token)
   if (!buffer) {
     return NextResponse.json({ error: "Token expired or not found" }, { status: 404 })
   }

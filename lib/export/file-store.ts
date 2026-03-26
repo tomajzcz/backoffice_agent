@@ -1,41 +1,33 @@
 /**
  * Generic file store for temporary export files (PDF, PPTX, etc.).
- * Uses /tmp with token-based access and automatic expiry.
+ * Uses the database (FileToken model) for cross-instance persistence on serverless.
  */
-import { writeFileSync, readFileSync, existsSync, unlinkSync } from "fs"
-import { join } from "path"
-import { tmpdir } from "os"
+import { prisma } from "@/lib/db/prisma"
 
 const TTL_MS = 10 * 60 * 1000 // 10 minutes
 
-function tokenPath(token: string, prefix: string): string {
-  const safe = token.replace(/[^a-zA-Z0-9-]/g, "")
-  return join(tmpdir(), `${prefix}${safe}`)
-}
-
-export function storeFile(buffer: Buffer, prefix: string): string {
+export async function storeFile(buffer: Buffer, prefix: string): Promise<string> {
   const token = crypto.randomUUID()
-  const path = tokenPath(token, prefix)
-  const meta = { expiresAt: Date.now() + TTL_MS }
-  writeFileSync(path, buffer)
-  writeFileSync(path + ".json", JSON.stringify(meta))
+  await prisma.fileToken.create({
+    data: {
+      token,
+      prefix,
+      data: buffer.toString("base64"),
+      expiresAt: new Date(Date.now() + TTL_MS),
+    },
+  })
   return token
 }
 
-export function getFile(token: string, prefix: string): Buffer | null {
-  const path = tokenPath(token, prefix)
-  const metaPath = path + ".json"
-  if (!existsSync(path) || !existsSync(metaPath)) return null
+export async function getFile(token: string, prefix: string): Promise<Buffer | null> {
+  const row = await prisma.fileToken.findUnique({ where: { token } })
+  if (!row || row.prefix !== prefix) return null
 
-  try {
-    const meta = JSON.parse(readFileSync(metaPath, "utf-8"))
-    if (meta.expiresAt < Date.now()) {
-      unlinkSync(path)
-      unlinkSync(metaPath)
-      return null
-    }
-    return readFileSync(path)
-  } catch {
+  if (row.expiresAt < new Date()) {
+    // Expired — clean up
+    await prisma.fileToken.delete({ where: { token } }).catch(() => {})
     return null
   }
+
+  return Buffer.from(row.data, "base64")
 }

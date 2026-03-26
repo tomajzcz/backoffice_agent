@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Chybí email nebo token" }, { status: 400 })
     }
 
-    const buffer = getPptx(token)
+    const buffer = await getPptx(token)
     if (!buffer) {
       return NextResponse.json(
         { error: "Prezentace vypršela nebo nebyla nalezena. Vygeneruj ji znovu." },

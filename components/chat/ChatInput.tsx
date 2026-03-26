@@ -62,7 +62,7 @@ export function ChatInput({ input, isLoading, onInputChange, onSubmit }: Props) 
 
   return (
     <form onSubmit={onSubmit} className="px-3 pb-3 pt-2">
-      <div className="relative flex items-end gap-2 rounded-xl border border-border/60 bg-secondary/40 px-3 py-2.5 focus-within:border-primary/40 focus-within:bg-secondary/60 transition-all">
+      <div className="relative flex items-end gap-2 rounded-2xl border border-border/40 bg-card/60 px-4 py-3 focus-within:border-primary/30 focus-within:glow-primary-sm transition-all duration-200">
         <textarea
           value={input}
           onChange={(e) => onInputChange(e.target.value)}
@@ -70,7 +70,7 @@ export function ChatInput({ input, isLoading, onInputChange, onSubmit }: Props) 
           placeholder="Napiš dotaz nebo instrukci…"
           rows={1}
           disabled={isLoading}
-          className="flex-1 resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none disabled:opacity-50 max-h-32 overflow-y-auto scrollbar-thin leading-relaxed"
+          className="flex-1 resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none disabled:opacity-50 max-h-32 overflow-y-auto scrollbar-thin leading-relaxed"
           style={{
             fontFamily: "Outfit, sans-serif",
             minHeight: "20px",
@@ -91,7 +91,7 @@ export function ChatInput({ input, isLoading, onInputChange, onSubmit }: Props) 
         <button
           type="submit"
           disabled={isLoading || !input.trim()}
-          className="shrink-0 w-7 h-7 rounded-lg bg-primary/90 hover:bg-primary flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+          className="shrink-0 w-8 h-8 rounded-xl bg-primary/90 hover:bg-primary hover:shadow-[0_0_12px_-3px_hsl(var(--primary)/0.3)] flex items-center justify-center transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed"
         >
           {isLoading ? (
             <Loader2 className="w-3.5 h-3.5 text-primary-foreground animate-spin" />
@@ -100,7 +100,7 @@ export function ChatInput({ input, isLoading, onInputChange, onSubmit }: Props) 
           )}
         </button>
       </div>
-      <p className="text-center text-[10px] text-muted-foreground/30 mt-1.5">
+      <p className="text-center text-[10px] text-muted-foreground/50 mt-1.5">
         Enter odeslat · Shift+Enter nový řádek{isSupported ? " · Mikrofon diktovat" : ""}
       </p>
     </form>

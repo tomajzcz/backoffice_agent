@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Download, FileText, Loader2 } from "lucide-react"
 import { downloadCSV } from "@/lib/export/csv"
 import { getCSVConfig } from "@/lib/export/csv-configs"
+import { getPDFTableConfig } from "@/lib/export/pdf-configs"
 import { buildTimestampedFilename } from "@/lib/export/filenames"
 import type { AgentToolResult } from "@/types/agent"
 
@@ -15,7 +16,8 @@ export function ExportButtons({ result }: Props) {
   const [pdfLoading, setPdfLoading] = useState(false)
 
   const csvConfig = getCSVConfig(result.toolName)
-  const showPdf = result.toolName === "generateReport"
+  const pdfTableConfig = getPDFTableConfig(result.toolName)
+  const showPdf = result.toolName === "generateReport" || !!pdfTableConfig
 
   if (!csvConfig && !showPdf) return null
 
@@ -29,18 +31,25 @@ export function ExportButtons({ result }: Props) {
   }
 
   async function handlePDF() {
-    if (result.toolName !== "generateReport") return
     setPdfLoading(true)
 
     try {
+      let payload: Record<string, unknown>
+
+      if (result.toolName === "generateReport") {
+        payload = { type: "report", title: result.title, markdown: result.markdown }
+      } else if (pdfTableConfig) {
+        const data = pdfTableConfig.dataExtractor(result)
+        const rows = data.map(pdfTableConfig.rowMapper)
+        payload = { type: "table", title: pdfTableConfig.title, headers: pdfTableConfig.headers, rows }
+      } else {
+        return
+      }
+
       const res = await fetch("/api/export/pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: "report",
-          title: result.title,
-          markdown: result.markdown,
-        }),
+        body: JSON.stringify(payload),
       })
 
       if (!res.ok) throw new Error("PDF generation failed")
@@ -60,7 +69,7 @@ export function ExportButtons({ result }: Props) {
       {csvConfig && (
         <button
           onClick={handleCSV}
-          className="flex items-center gap-1.5 text-[11px] text-muted-foreground/60 hover:text-foreground transition-colors"
+          className="flex items-center gap-1.5 text-[11px] text-muted-foreground/60 hover:text-foreground px-2 py-1 rounded-md border border-border/30 hover:border-border/50 hover:bg-secondary/40 transition-all duration-150"
         >
           <Download className="w-3 h-3" />
           CSV
@@ -70,7 +79,7 @@ export function ExportButtons({ result }: Props) {
         <button
           onClick={handlePDF}
           disabled={pdfLoading}
-          className="flex items-center gap-1.5 text-[11px] text-muted-foreground/60 hover:text-foreground transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 text-[11px] text-muted-foreground/60 hover:text-foreground px-2 py-1 rounded-md border border-border/30 hover:border-border/50 hover:bg-secondary/40 transition-all duration-150 disabled:opacity-50"
         >
           {pdfLoading ? (
             <Loader2 className="w-3 h-3 animate-spin" />

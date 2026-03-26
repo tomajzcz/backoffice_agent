@@ -117,7 +117,7 @@ export interface QueryWeeklyKPIsResult {
 
 export interface GenerateReportResult {
   toolName: "generateReport"
-  reportType: "weekly_summary" | "renovation_scan"
+  reportType: "weekly_summary" | "renovation_scan" | "custom"
   title: string
   markdown: string
   generatedAt: string

@@ -78,7 +78,7 @@ export function EmailDraftTab({ result }: Props) {
         <div className="rounded-lg border border-border/40 bg-secondary/20 overflow-hidden">
           <div className="px-4 py-3 space-y-2 border-b border-border/30">
             <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground/50 font-medium w-16 shrink-0"
+              <span className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground/70 font-medium w-16 shrink-0"
                 style={{ fontFamily: "'JetBrains Mono', monospace" }}
               >
                 <User className="w-3 h-3" />
@@ -87,7 +87,7 @@ export function EmailDraftTab({ result }: Props) {
               <span className="text-sm text-foreground/85 font-mono">{result.to}</span>
             </div>
             <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground/50 font-medium w-16 shrink-0"
+              <span className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground/70 font-medium w-16 shrink-0"
                 style={{ fontFamily: "'JetBrains Mono', monospace" }}
               >
                 <FileText className="w-3 h-3" />
@@ -99,16 +99,16 @@ export function EmailDraftTab({ result }: Props) {
           <div className="px-4 py-4">
             <div
               className="prose prose-invert prose-sm max-w-none
-                [&_p]:text-foreground/80 [&_p]:text-sm [&_p]:leading-relaxed [&_p]:my-2
-                [&_strong]:text-foreground/90
-                [&_ul]:my-2 [&_li]:text-foreground/80 [&_li]:text-sm
+                [&_p]:text-foreground [&_p]:text-sm [&_p]:leading-relaxed [&_p]:my-2
+                [&_strong]:text-foreground
+                [&_ul]:my-2 [&_li]:text-foreground [&_li]:text-sm
                 [&_a]:text-primary [&_a]:no-underline hover:[&_a]:underline"
               dangerouslySetInnerHTML={{ __html: editedBody }}
             />
           </div>
         </div>
 
-        <div className="flex items-center justify-between text-[10px] text-muted-foreground/40 font-mono">
+        <div className="flex items-center justify-between text-[10px] text-muted-foreground/60 font-mono">
           <span className="flex items-center gap-1.5">
             <Mail className="w-3 h-3" />
             Gmail Draft ID: {committedDraft.draftId}
@@ -142,7 +142,7 @@ export function EmailDraftTab({ result }: Props) {
       <div className="rounded-lg border border-border/40 bg-secondary/20 overflow-hidden">
         <div className="px-4 py-3 space-y-2 border-b border-border/30">
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground/50 font-medium w-16 shrink-0"
+            <span className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground/70 font-medium w-16 shrink-0"
               style={{ fontFamily: "'JetBrains Mono', monospace" }}
             >
               <User className="w-3 h-3" />
@@ -151,7 +151,7 @@ export function EmailDraftTab({ result }: Props) {
             <span className="text-sm text-foreground/85 font-mono">{result.to}</span>
           </div>
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground/50 font-medium w-16 shrink-0"
+            <span className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground/70 font-medium w-16 shrink-0"
               style={{ fontFamily: "'JetBrains Mono', monospace" }}
             >
               <FileText className="w-3 h-3" />
@@ -176,14 +176,14 @@ export function EmailDraftTab({ result }: Props) {
               value={editedBody}
               onChange={(e) => setEditedBody(e.target.value)}
               rows={10}
-              className="w-full text-sm text-foreground/80 bg-secondary/50 border border-border/40 rounded px-3 py-2 font-mono outline-none focus:border-primary/40 resize-y"
+              className="w-full text-sm text-foreground bg-secondary/50 border border-border/40 rounded px-3 py-2 font-mono outline-none focus:border-primary/40 resize-y"
             />
           ) : (
             <div
               className="prose prose-invert prose-sm max-w-none
-                [&_p]:text-foreground/80 [&_p]:text-sm [&_p]:leading-relaxed [&_p]:my-2
-                [&_strong]:text-foreground/90
-                [&_ul]:my-2 [&_li]:text-foreground/80 [&_li]:text-sm
+                [&_p]:text-foreground [&_p]:text-sm [&_p]:leading-relaxed [&_p]:my-2
+                [&_strong]:text-foreground
+                [&_ul]:my-2 [&_li]:text-foreground [&_li]:text-sm
                 [&_a]:text-primary [&_a]:no-underline hover:[&_a]:underline"
               dangerouslySetInnerHTML={{ __html: editedBody }}
             />

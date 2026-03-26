@@ -9,6 +9,8 @@ import { ChartTab } from "./ChartTab"
 import { LogsTab } from "./LogsTab"
 import { ReportTab } from "./ReportTab"
 import { EmailDraftTab } from "./EmailDraftTab"
+import { EmptyState } from "./EmptyState"
+import { ExportButtons } from "./ExportButtons"
 import { MessageSquare, Table2, BarChart2, Activity, FileText, Mail } from "lucide-react"
 import type { Message } from "ai/react"
 import type { AgentToolResult, ExplainabilityData } from "@/types/agent"
@@ -20,6 +22,60 @@ interface Props {
   onAction?: (prompt: string) => void
   isLoading?: boolean
 }
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+function getResultSubtitle(r: AgentToolResult): string {
+  const t = r as any
+  switch (r.toolName) {
+    case "queryNewClients": return `${t.totalClients} klientů · ${t.period}`
+    case "queryLeadsSalesTimeline": return `${t.totalLeads} leadů · ${t.monthsBack} měsíců`
+    case "scanMissingRenovationData": return `${t.totalCount} nemovitostí bez dat o rekonstrukci`
+    case "createAgentTask": return `Úkol #${t.taskId} uložen`
+    case "queryWeeklyKPIs": return `${t.weeksBack} týdnů · ${t.totals.totalLeads} leadů celkem`
+    case "generateReport": return t.title
+    case "generatePresentation": return `${t.slideCount} slidů · ${t.title}`
+    case "getCalendarAvailability": return `${t.totalFreeSlots} volných slotů · ${t.dateRangeStart} – ${t.dateRangeEnd}`
+    case "getPropertyDetails": return `${t.property.address} · ${t.property.district}`
+    case "prepareEmailDraft": return `Návrh: ${t.subject}`
+    case "createGmailDraft": return `Draft: ${t.subject}`
+    case "sendPresentationEmail": return `Email s prezentací odeslán na ${t.to}`
+    case "listScheduledJobs": return `${t.totalJobs} monitorovacích jobů`
+    case "triggerMonitoringJob": return `${t.jobName} · ${t.triggered ? "spuštěno" : "chyba"}`
+    case "getMonitoringResults": return `${t.totalResults} výsledků · ${t.newResults} nových`
+    case "listProperties": return `${t.totalCount} nemovitostí`
+    case "listClients": return `${t.totalCount} klientů`
+    case "listLeads": return `${t.totalCount} leadů`
+    case "listDeals": return `${t.totalCount} obchodů`
+    case "listShowings": return `${t.totalCount} prohlídek`
+    case "createProperty": return `Nemovitost #${t.property.id} vytvořena`
+    case "updateProperty": return `Nemovitost #${t.property.id} aktualizována`
+    case "createClient": return `Klient #${t.client.id} vytvořen`
+    case "updateClient": return `Klient #${t.client.id} aktualizován`
+    case "createLead": return `Lead #${t.lead.id} vytvořen`
+    case "updateLead": return `Lead #${t.lead.id} aktualizován`
+    case "createDeal": return `Obchod #${t.deal.id} vytvořen`
+    case "updateDeal": return `Obchod #${t.deal.id} aktualizován`
+    case "createShowing": return `Prohlídka #${t.showing.id} naplánována`
+    case "updateShowing": return `Prohlídka #${t.showing.id} aktualizována`
+    case "createCalendarEvent": return `Událost vytvořena · ${t.event.summary}`
+    case "updateCalendarEvent": return `Událost aktualizována · ${t.event.summary}`
+    case "deleteCalendarEvent": return "Událost smazána z kalendáře"
+    case "listCalendarEvents": return `${t.totalEvents} událostí v kalendáři`
+    case "queryPropertiesByLifecycle": return `${t.totalCount} nemovitostí v pipeline`
+    case "scanOverdueTasks": return `${t.totalOverdue} po termínu · ${t.totalDueSoon} blížících se`
+    case "scanOperationalHealth": return `Zdraví: ${t.overallScore}/100 · ${t.totalIssues} problémů`
+    case "calculatePropertyProfitability": return `${t.totalProperties} nemovitostí · ROI Ø ${t.averageROI}%`
+    case "getInvestorOverview": return `${t.totalInvestors} investorů`
+    case "getPropertyDocuments": return `${t.totalDocuments} dokumentů · ${t.propertyAddress}`
+    case "scanMissingDocuments": return `${t.totalWithMissingDocs} nemovitostí s chybějícími dokumenty`
+    case "analyzeNewListings": return `${t.totalResults} nabídek · ${t.jobName}`
+    case "queryActiveRenovations": return `${t.totalCount} aktivních rekonstrukcí`
+    case "getRenovationDetail": return `Rekonstrukce #${t.renovation.id} · ${t.renovation.propertyAddress}`
+    case "scanRenovationHealth": return `Zdraví rekonstrukcí: ${t.healthScore}/100 · ${t.totalDelayed} zpožděných`
+    default: return ""
+  }
+}
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 export function ResultsPanel({ messages, latestToolResult, latestExplainability, onAction, isLoading }: Props) {
   const [activeTab, setActiveTab] = useState("odpoved")
@@ -62,7 +118,6 @@ export function ResultsPanel({ messages, latestToolResult, latestExplainability,
     ) {
       setActiveTab("data")
     } else {
-      // Tools with charts: queryNewClients, queryLeadsSalesTimeline, scan, weeklyKPIs, getCalendarAvailability
       setActiveTab("graf")
     }
   }, [latestToolResult])
@@ -79,118 +134,29 @@ export function ResultsPanel({ messages, latestToolResult, latestExplainability,
   return (
     <div className="flex flex-col h-full bg-background/40">
       {/* Header */}
-      <div className="px-4 py-3.5 border-b border-border/40 flex items-center justify-between">
+      <div className="px-4 py-3.5 border-b border-border/30 flex items-center justify-between">
         <div>
           <h2 className="text-sm font-semibold text-foreground" style={{ fontFamily: "Syne, sans-serif" }}>
             Výsledky
           </h2>
-          <p className="text-[10px] text-muted-foreground/50 mt-0.5">
-            {latestToolResult
-              ? latestToolResult.toolName === "queryNewClients"
-                ? `${latestToolResult.totalClients} klientů · ${latestToolResult.period}`
-                : latestToolResult.toolName === "queryLeadsSalesTimeline"
-                ? `${latestToolResult.totalLeads} leadů · ${latestToolResult.monthsBack} měsíců`
-                : latestToolResult.toolName === "scanMissingRenovationData"
-                ? `${latestToolResult.totalCount} nemovitostí bez dat o rekonstrukci`
-                : latestToolResult.toolName === "createAgentTask"
-                ? `Úkol #${latestToolResult.taskId} uložen`
-                : latestToolResult.toolName === "queryWeeklyKPIs"
-                ? `${latestToolResult.weeksBack} týdnů · ${latestToolResult.totals.totalLeads} leadů celkem`
-                : latestToolResult.toolName === "generateReport"
-                ? latestToolResult.title
-                : latestToolResult.toolName === "generatePresentation"
-                ? `${latestToolResult.slideCount} slidů · ${latestToolResult.title}`
-                : latestToolResult.toolName === "getCalendarAvailability"
-                ? `${latestToolResult.totalFreeSlots} volných slotů · ${latestToolResult.dateRangeStart} – ${latestToolResult.dateRangeEnd}`
-                : latestToolResult.toolName === "getPropertyDetails"
-                ? `${latestToolResult.property.address} · ${latestToolResult.property.district}`
-                : latestToolResult.toolName === "prepareEmailDraft"
-                ? `Návrh: ${latestToolResult.subject}`
-                : latestToolResult.toolName === "createGmailDraft"
-                ? `Draft: ${latestToolResult.subject}`
-                : latestToolResult.toolName === "sendPresentationEmail"
-                ? `Email s prezentací odeslán na ${latestToolResult.to}`
-                : latestToolResult.toolName === "listScheduledJobs"
-                ? `${latestToolResult.totalJobs} monitorovacích jobů`
-                : latestToolResult.toolName === "triggerMonitoringJob"
-                ? `${latestToolResult.jobName} · ${latestToolResult.triggered ? "spuštěno" : "chyba"}`
-                : latestToolResult.toolName === "getMonitoringResults"
-                ? `${latestToolResult.totalResults} výsledků · ${latestToolResult.newResults} nových`
-                : latestToolResult.toolName === "listProperties"
-                ? `${latestToolResult.totalCount} nemovitostí`
-                : latestToolResult.toolName === "listClients"
-                ? `${latestToolResult.totalCount} klientů`
-                : latestToolResult.toolName === "listLeads"
-                ? `${latestToolResult.totalCount} leadů`
-                : latestToolResult.toolName === "listDeals"
-                ? `${latestToolResult.totalCount} obchodů`
-                : latestToolResult.toolName === "listShowings"
-                ? `${latestToolResult.totalCount} prohlídek`
-                : latestToolResult.toolName === "createProperty"
-                ? `Nemovitost #${latestToolResult.property.id} vytvořena`
-                : latestToolResult.toolName === "updateProperty"
-                ? `Nemovitost #${latestToolResult.property.id} aktualizována`
-                : latestToolResult.toolName === "createClient"
-                ? `Klient #${latestToolResult.client.id} vytvořen`
-                : latestToolResult.toolName === "updateClient"
-                ? `Klient #${latestToolResult.client.id} aktualizován`
-                : latestToolResult.toolName === "createLead"
-                ? `Lead #${latestToolResult.lead.id} vytvořen`
-                : latestToolResult.toolName === "updateLead"
-                ? `Lead #${latestToolResult.lead.id} aktualizován`
-                : latestToolResult.toolName === "createDeal"
-                ? `Obchod #${latestToolResult.deal.id} vytvořen`
-                : latestToolResult.toolName === "updateDeal"
-                ? `Obchod #${latestToolResult.deal.id} aktualizován`
-                : latestToolResult.toolName === "createShowing"
-                ? `Prohlídka #${latestToolResult.showing.id} naplánována`
-                : latestToolResult.toolName === "updateShowing"
-                ? `Prohlídka #${latestToolResult.showing.id} aktualizována`
-                : latestToolResult.toolName === "createCalendarEvent"
-                ? `Událost vytvořena · ${latestToolResult.event.summary}`
-                : latestToolResult.toolName === "updateCalendarEvent"
-                ? `Událost aktualizována · ${latestToolResult.event.summary}`
-                : latestToolResult.toolName === "deleteCalendarEvent"
-                ? `Událost smazána z kalendáře`
-                : latestToolResult.toolName === "listCalendarEvents"
-                ? `${latestToolResult.totalEvents} událostí v kalendáři`
-                : latestToolResult.toolName === "queryPropertiesByLifecycle"
-                ? `${latestToolResult.totalCount} nemovitostí v pipeline`
-                : latestToolResult.toolName === "scanOverdueTasks"
-                ? `${latestToolResult.totalOverdue} po termínu · ${latestToolResult.totalDueSoon} blížících se`
-                : latestToolResult.toolName === "scanOperationalHealth"
-                ? `Zdraví: ${latestToolResult.overallScore}/100 · ${latestToolResult.totalIssues} problémů`
-                : latestToolResult.toolName === "calculatePropertyProfitability"
-                ? `${latestToolResult.totalProperties} nemovitostí · ROI Ø ${latestToolResult.averageROI}%`
-                : latestToolResult.toolName === "getInvestorOverview"
-                ? `${latestToolResult.totalInvestors} investorů`
-                : latestToolResult.toolName === "getPropertyDocuments"
-                ? `${latestToolResult.totalDocuments} dokumentů · ${latestToolResult.propertyAddress}`
-                : latestToolResult.toolName === "scanMissingDocuments"
-                ? `${latestToolResult.totalWithMissingDocs} nemovitostí s chybějícími dokumenty`
-                : latestToolResult.toolName === "analyzeNewListings"
-                ? `${latestToolResult.totalResults} nabídek · ${latestToolResult.jobName}`
-                : latestToolResult.toolName === "queryActiveRenovations"
-                ? `${latestToolResult.totalCount} aktivních rekonstrukcí`
-                : latestToolResult.toolName === "getRenovationDetail"
-                ? `Rekonstrukce #${latestToolResult.renovation.id} · ${latestToolResult.renovation.propertyAddress}`
-                : latestToolResult.toolName === "scanRenovationHealth"
-                ? `Zdraví rekonstrukcí: ${latestToolResult.healthScore}/100 · ${latestToolResult.totalDelayed} zpožděných`
-                : ""
-              : "Čeká na dotaz"}
+          <p className="text-[10px] text-muted-foreground/70 mt-0.5">
+            {latestToolResult ? getResultSubtitle(latestToolResult) : "Čeká na dotaz"}
           </p>
         </div>
-        {latestToolResult && (
-          <span className="text-[10px] font-mono px-2 py-1 rounded bg-primary/10 text-primary/70 border border-primary/15">
-            {latestToolResult.toolName}
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {latestToolResult && <ExportButtons result={latestToolResult} />}
+          {latestToolResult && (
+            <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-primary/10 text-primary/70 border border-primary/15">
+              {latestToolResult.toolName}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Tabs */}
-      <div className="px-4 pt-3 pb-2 border-b border-border/30">
+      <div className="px-4 pt-3 pb-0">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="bg-secondary/50 border border-border/30 h-8">
+          <TabsList>
             <TabsTrigger value="odpoved">
               <MessageSquare className="w-3 h-3" />
               Odpověď
@@ -239,9 +205,7 @@ export function ResultsPanel({ messages, latestToolResult, latestExplainability,
               {latestToolResult?.toolName === "prepareEmailDraft" || latestToolResult?.toolName === "createGmailDraft" ? (
                 <EmailDraftTab result={latestToolResult} />
               ) : (
-                <div className="flex items-center justify-center h-40 text-muted-foreground/40 text-sm">
-                  Žádný email draft k zobrazení
-                </div>
+                <EmptyState icon={Mail} title="Žádný email draft k zobrazení" />
               )}
             </TabsContent>
             <TabsContent value="logy">

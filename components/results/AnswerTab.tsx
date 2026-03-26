@@ -3,6 +3,8 @@
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { ExplainabilitySection } from "./ExplainabilitySection"
+import { EmptyState } from "./EmptyState"
+import { MessageSquare } from "lucide-react"
 import type { Message } from "ai/react"
 import type { ExplainabilityData } from "@/types/agent"
 
@@ -27,17 +29,15 @@ export function AnswerTab({ messages, explainability }: Props) {
       : ""
 
   if (!textContent) {
-    return (
-      <div className="flex items-center justify-center h-40 text-muted-foreground/40 text-sm">
-        Zde se zobrazí odpověď agenta
-      </div>
-    )
+    return <EmptyState icon={MessageSquare} title="Zde se zobrazí odpověď agenta" description="Zadejte dotaz v chatu" />
   }
 
   return (
     <div className="animate-fade-in">
-      <div className="prose-agent">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{textContent}</ReactMarkdown>
+      <div className="rounded-xl border border-border/30 bg-card/40 p-5">
+        <div className="prose-agent">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{textContent}</ReactMarkdown>
+        </div>
       </div>
       {explainability && <ExplainabilitySection data={explainability} />}
     </div>

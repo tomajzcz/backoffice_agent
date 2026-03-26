@@ -378,6 +378,12 @@ enum CallStatus {
   SKIPPED
 }
 
+enum ExecutiveReportStatus {
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
 model CallLog {
   id               Int        @id @default(autoincrement())
   showingId        Int
@@ -396,6 +402,36 @@ model CallLog {
   @@index([showingId])
   @@index([clientId])
   @@map("call_logs")
+}
+
+model AutomationConfig {
+  id             Int      @id @default(autoincrement())
+  key            String   @unique
+  isActive       Boolean  @default(true) @map("is_active")
+  recipientEmail String   @map("recipient_email")
+  cronExpr       String   @map("cron_expr")
+  configJson     Json?    @map("config_json")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("automation_configs")
+}
+
+model ExecutiveReportRun {
+  id             Int                   @id @default(autoincrement())
+  status         ExecutiveReportStatus @default(RUNNING)
+  trigger        String                @default("cron")
+  recipientEmail String                @map("recipient_email")
+  slideCount     Int?                  @map("slide_count")
+  pptxToken      String?               @map("pptx_token")
+  errorMessage   String?               @map("error_message")
+  startedAt      DateTime              @default(now()) @map("started_at")
+  finishedAt     DateTime?             @map("finished_at")
+  createdAt      DateTime              @default(now()) @map("created_at")
+
+  @@index([startedAt])
+  @@index([status])
+  @@map("executive_report_runs")
 }
 
 model Renovation {

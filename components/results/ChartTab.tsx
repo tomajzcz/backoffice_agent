@@ -3,6 +3,8 @@
 import { ClientSourcesBarChart } from "@/components/charts/ClientSourcesBarChart"
 import { LeadsSalesLineChart } from "@/components/charts/LeadsSalesLineChart"
 import { WeeklyKPIsBarChart } from "@/components/charts/WeeklyKPIsBarChart"
+import { EmptyState } from "./EmptyState"
+import { BarChart2 } from "lucide-react"
 import type { AgentToolResult } from "@/types/agent"
 
 interface Props {
@@ -11,11 +13,7 @@ interface Props {
 
 export function ChartTab({ result }: Props) {
   if (!result) {
-    return (
-      <div className="flex items-center justify-center h-40 text-muted-foreground/40 text-sm">
-        Spusť dotaz pro zobrazení grafu
-      </div>
-    )
+    return <EmptyState icon={BarChart2} title="Spusť dotaz pro zobrazení grafu" description="Data budou vizualizována automaticky" />
   }
 
   if (result.toolName === "queryNewClients") {
@@ -228,12 +226,12 @@ export function ChartTab({ result }: Props) {
         />
         <div className="flex gap-6 pt-1">
           <div className="text-center">
-            <div className="text-lg font-bold text-foreground/80">{result.averageROI}%</div>
-            <div className="text-[10px] text-muted-foreground/50">Ø ROI</div>
+            <div className="text-lg font-bold text-foreground">{result.averageROI}%</div>
+            <div className="text-[10px] text-muted-foreground/70">Ø ROI</div>
           </div>
           <div className="text-center">
-            <div className="text-lg font-bold text-foreground/80">{result.totalProperties}</div>
-            <div className="text-[10px] text-muted-foreground/50">Nemovitostí</div>
+            <div className="text-lg font-bold text-foreground">{result.totalProperties}</div>
+            <div className="text-[10px] text-muted-foreground/70">Nemovitostí</div>
           </div>
         </div>
       </div>
@@ -271,14 +269,14 @@ export function ChartTab({ result }: Props) {
         />
         <div className="flex gap-6 pt-1">
           <div className="text-center">
-            <div className="text-lg font-bold text-foreground/80">{result.totalResults}</div>
-            <div className="text-[10px] text-muted-foreground/50">Nabídek</div>
+            <div className="text-lg font-bold text-foreground">{result.totalResults}</div>
+            <div className="text-[10px] text-muted-foreground/70">Nabídek</div>
           </div>
           <div className="text-center">
-            <div className="text-lg font-bold text-foreground/80">
+            <div className="text-lg font-bold text-foreground">
               {result.marketStats.avgPricePerM2.toLocaleString("cs-CZ")} Kč
             </div>
-            <div className="text-[10px] text-muted-foreground/50">Ø cena/m²</div>
+            <div className="text-[10px] text-muted-foreground/70">Ø cena/m²</div>
           </div>
         </div>
       </div>

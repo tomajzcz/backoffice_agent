@@ -42,10 +42,10 @@ export function MessageBubble({ message, isLoading }: Props) {
     return (
       <div className="flex justify-end animate-fade-in">
         <div className="max-w-[85%]">
-          <div className="bg-primary/10 border border-primary/20 rounded-2xl rounded-tr-sm px-3.5 py-2.5">
-            <p className="text-sm text-foreground/90 leading-relaxed">{message.content as string}</p>
+          <div className="bg-primary/8 border border-primary/15 rounded-2xl rounded-tr-md px-3.5 py-2.5">
+            <p className="text-sm text-foreground leading-relaxed">{message.content as string}</p>
           </div>
-          <p className="text-right text-[10px] text-muted-foreground/40 mt-1 pr-1 font-mono">
+          <p className="text-right text-[10px] text-muted-foreground/60 mt-1 pr-1 font-mono">
             {formatTime(message.createdAt)}
           </p>
         </div>
@@ -57,7 +57,7 @@ export function MessageBubble({ message, isLoading }: Props) {
     return (
       <div className="flex gap-2.5 animate-fade-in">
         {/* Avatar */}
-        <div className="w-6 h-6 rounded-md bg-primary/15 border border-primary/20 flex items-center justify-center shrink-0 mt-0.5">
+        <div className="w-7 h-7 rounded-lg bg-primary/15 border border-primary/20 flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
           <span className="text-[10px] font-bold text-primary" style={{ fontFamily: "Syne, sans-serif" }}>A</span>
         </div>
 
@@ -75,7 +75,7 @@ export function MessageBubble({ message, isLoading }: Props) {
           {textContent && (
             <div className={cn(
               "rounded-2xl rounded-tl-sm px-3.5 py-2.5",
-              "bg-card border border-border/60"
+              "bg-card/80 border border-border/40"
             )}>
               <div className="prose-agent">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -87,8 +87,8 @@ export function MessageBubble({ message, isLoading }: Props) {
 
           {/* Loading cursor */}
           {isLoading && !textContent && toolCalls.length === 0 && (
-            <div className="bg-card border border-border/60 rounded-2xl rounded-tl-sm px-3.5 py-2.5">
-              <span className="inline-block w-1.5 h-4 bg-primary/70 animate-blink" />
+            <div className="bg-card/80 border border-border/40 rounded-2xl rounded-tl-sm px-3.5 py-2.5">
+              <span className="inline-block w-2 h-4 bg-primary/60 animate-blink rounded-sm" />
             </div>
           )}
         </div>

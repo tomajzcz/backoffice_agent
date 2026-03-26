@@ -22,16 +22,16 @@ export function MessageList({ messages, isLoading }: Props) {
   return (
     <ScrollArea className="flex-1 px-3 py-3">
       {visibleMessages.length === 0 ? (
-        <div className="h-full flex flex-col items-center justify-center gap-3 py-10 select-none">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-            <span className="text-lg font-bold text-primary" style={{ fontFamily: "Syne, sans-serif" }}>B</span>
+        <div className="h-full flex flex-col items-center justify-center gap-4 py-12 select-none px-6">
+          <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+            <span className="text-xl font-bold text-primary" style={{ fontFamily: "Syne, sans-serif" }}>B</span>
           </div>
-          <div className="text-center space-y-1">
-            <p className="text-sm font-medium text-foreground/70" style={{ fontFamily: "Syne, sans-serif" }}>
-              Back Office Agent
+          <div className="text-center space-y-2">
+            <p className="text-base font-semibold text-foreground" style={{ fontFamily: "Syne, sans-serif" }}>
+              Jak ti mohu pomoci?
             </p>
-            <p className="text-xs text-muted-foreground/60 max-w-[200px] leading-relaxed">
-              Zeptej se mě na stav nemovitostí, úkoly, investory, ziskovost nebo operativní audit.
+            <p className="text-xs text-muted-foreground/70 max-w-[240px] leading-relaxed">
+              Zeptej se na stav nemovitostí, operativní audit, investory nebo data.
             </p>
           </div>
         </div>

@@ -4,7 +4,7 @@ import { useState } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { Download, FileText, Mail, Send, CheckCircle2, X, Loader2 } from "lucide-react"
-import { ExportButtons } from "./ExportButtons"
+import { EmptyState } from "./EmptyState"
 import type { AgentToolResult } from "@/types/agent"
 
 interface Props {
@@ -57,27 +57,19 @@ export function ReportTab({ result, isLoading }: Props) {
   }
 
   if (!result) {
-    return (
-      <div className="flex flex-col items-center justify-center h-40 gap-2 text-muted-foreground/40">
-        <FileText className="w-5 h-5" />
-        <p className="text-sm">Spusť generování reportu nebo prezentace</p>
-      </div>
-    )
+    return <EmptyState icon={FileText} title="Spusť generování reportu nebo prezentace" description="Požádej agenta o report nebo PPTX" />
   }
 
   if (result.toolName === "generateReport") {
     return (
       <div className="animate-fade-in">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-foreground/80" style={{ fontFamily: "Syne, sans-serif" }}>
+          <h3 className="text-sm font-semibold text-foreground" style={{ fontFamily: "Syne, sans-serif" }}>
             {result.title}
           </h3>
-          <div className="flex items-center gap-3">
-            <ExportButtons result={result} />
-            <span className="text-[10px] text-muted-foreground/40 font-mono">
-              {new Date(result.generatedAt).toLocaleDateString("cs-CZ")}
-            </span>
-          </div>
+          <span className="text-[10px] text-muted-foreground/60 font-mono">
+            {new Date(result.generatedAt).toLocaleDateString("cs-CZ")}
+          </span>
         </div>
         <div className="prose prose-sm prose-invert prose-agent max-w-none text-xs leading-relaxed">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{result.markdown}</ReactMarkdown>
@@ -93,10 +85,10 @@ export function ReportTab({ result, isLoading }: Props) {
       <div className="animate-fade-in flex flex-col items-center justify-center gap-6 py-12">
         <div className="text-center space-y-2">
           <FileText className="w-10 h-10 text-primary/60 mx-auto" />
-          <h3 className="text-sm font-semibold text-foreground/80" style={{ fontFamily: "Syne, sans-serif" }}>
+          <h3 className="text-sm font-semibold text-foreground" style={{ fontFamily: "Syne, sans-serif" }}>
             {result.title}
           </h3>
-          <p className="text-xs text-muted-foreground/50">
+          <p className="text-xs text-muted-foreground/70">
             {result.slideCount} {result.slideCount === 1 ? "slide" : result.slideCount < 5 ? "slidy" : "slidů"} · PPTX formát
           </p>
         </div>
@@ -152,7 +144,7 @@ export function ReportTab({ result, isLoading }: Props) {
                         value={emailInput}
                         onChange={(e) => setEmailInput(e.target.value)}
                         placeholder="email@example.com"
-                        className="flex-1 px-3 py-2 rounded-lg bg-secondary/50 border border-border/30 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
+                        className="flex-1 px-3 py-2 rounded-lg bg-secondary/50 border border-border/30 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
                         disabled={sendState === "sending"}
                       />
                       <button
@@ -174,7 +166,7 @@ export function ReportTab({ result, isLoading }: Props) {
                           setErrorMessage("")
                           setEmailInput("")
                         }}
-                        className="flex items-center justify-center p-2 rounded-lg text-muted-foreground/50 hover:text-foreground/70 hover:bg-secondary/50 transition-colors"
+                        className="flex items-center justify-center p-2 rounded-lg text-muted-foreground/70 hover:text-foreground/70 hover:bg-secondary/50 transition-colors"
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -194,9 +186,5 @@ export function ReportTab({ result, isLoading }: Props) {
     )
   }
 
-  return (
-    <div className="flex items-center justify-center h-40 text-muted-foreground/40 text-sm">
-      Výsledek nemá formát zprávy
-    </div>
-  )
+  return <EmptyState icon={FileText} title="Výsledek nemá formát zprávy" />
 }

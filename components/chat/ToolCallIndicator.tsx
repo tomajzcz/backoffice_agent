@@ -14,7 +14,7 @@ export function ToolCallIndicator({ toolName, isLoading }: Props) {
   const label = TOOL_LABELS[toolName] ?? `Spouštím: ${toolName}…`
 
   return (
-    <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-primary/5 border border-primary/15 text-xs">
+    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/5 border border-primary/10 text-xs transition-all duration-200">
       {isLoading ? (
         <Loader2 className="w-3 h-3 text-primary animate-spin shrink-0" />
       ) : (

@@ -4,6 +4,7 @@ import { useRef, useMemo } from "react"
 import { useChat } from "ai/react"
 import { ChatPanel } from "@/components/chat/ChatPanel"
 import { ResultsPanel } from "@/components/results/ResultsPanel"
+import { AppLayout } from "@/components/layout/AppLayout"
 import type { AgentToolResult, ExplainabilityData } from "@/types/agent"
 
 export default function Home() {
@@ -58,23 +59,25 @@ export default function Home() {
   }
 
   return (
-    <main className="flex h-screen overflow-hidden">
-      {/* Left panel: Chat */}
-      <div className="w-[400px] shrink-0 flex flex-col">
-        <ChatPanel
-          messages={messages}
-          input={input}
-          isLoading={isLoading}
-          error={error}
-          onInputChange={handleInputChangeWrapper}
-          onSubmit={handleSubmit}
-        />
-      </div>
+    <AppLayout>
+      <div className="flex h-full overflow-hidden">
+        {/* Left panel: Chat */}
+        <div className="w-[400px] shrink-0 flex flex-col">
+          <ChatPanel
+            messages={messages}
+            input={input}
+            isLoading={isLoading}
+            error={error}
+            onInputChange={handleInputChangeWrapper}
+            onSubmit={handleSubmit}
+          />
+        </div>
 
-      {/* Right panel: Results */}
-      <div className="flex-1 min-w-0 flex flex-col">
-        <ResultsPanel messages={messages} latestToolResult={latestToolResult} latestExplainability={latestExplainability} onAction={handleAction} isLoading={isLoading} />
+        {/* Right panel: Results */}
+        <div className="flex-1 min-w-0 flex flex-col">
+          <ResultsPanel messages={messages} latestToolResult={latestToolResult} latestExplainability={latestExplainability} onAction={handleAction} isLoading={isLoading} />
+        </div>
       </div>
-    </main>
+    </AppLayout>
   )
 }

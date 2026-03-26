@@ -99,24 +99,37 @@ function buildRenovationScan(data: ScanMissingRenovationResult): string {
 
 export const generateReportTool = tool({
   description:
-    "Vygeneruje strukturovaný Markdown report z dat jiného toolu. " +
+    "Vygeneruje strukturovaný Markdown report. " +
     "Pro weekly_summary potřebuje data z queryWeeklyKPIs. " +
     "Pro renovation_scan potřebuje data z scanMissingRenovationData. " +
-    "Report se zobrazí v záložce Zpráva v UI.",
+    "Pro custom agent sám dodá title a markdown — použij pro libovolný report (investor, operativa, ad-hoc analýzy). " +
+    "Report se zobrazí v záložce Zpráva v UI s možností stažení jako PDF.",
   parameters: z.object({
     reportType: z
-      .enum(["weekly_summary", "renovation_scan"])
-      .describe("Typ reportu: weekly_summary nebo renovation_scan"),
+      .enum(["weekly_summary", "renovation_scan", "custom"])
+      .describe("Typ reportu: weekly_summary, renovation_scan nebo custom (vlastní markdown)"),
     data: z
       .record(z.unknown())
-      .describe("Data z příslušného toolu (queryWeeklyKPIs nebo scanMissingRenovationData)"),
+      .optional()
+      .describe("Data z příslušného toolu (pro weekly_summary nebo renovation_scan)"),
+    title: z
+      .string()
+      .optional()
+      .describe("Název reportu (povinné pro custom)"),
+    markdown: z
+      .string()
+      .optional()
+      .describe("Obsah reportu v Markdown (povinné pro custom)"),
   }),
-  execute: async ({ reportType, data }): Promise<GenerateReportResult> => {
+  execute: async ({ reportType, data, title: customTitle, markdown: customMarkdown }): Promise<GenerateReportResult> => {
    try {
     let markdown = ""
     let title = ""
 
-    if (reportType === "weekly_summary") {
+    if (reportType === "custom") {
+      title = customTitle ?? "Report"
+      markdown = customMarkdown ?? ""
+    } else if (reportType === "weekly_summary") {
       const kpiData = data as unknown as QueryWeeklyKPIsResult
       title = `Týdenní report`
       markdown = buildWeeklySummary(kpiData)

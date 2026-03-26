@@ -154,7 +154,7 @@ export function JobForm({ open, onOpenChange, editingJob, onSave }: Props) {
                   <option key={loc} value={loc} />
                 ))}
               </datalist>
-              <p className="text-[10px] text-muted-foreground/50 mt-1">Podporované lokality: kraje, města i pražské městské části</p>
+              <p className="text-[10px] text-muted-foreground/70 mt-1">Podporované lokality: kraje, města i pražské městské části</p>
             </div>
 
             {/* Sources */}
@@ -218,7 +218,7 @@ export function JobForm({ open, onOpenChange, editingJob, onSave }: Props) {
                   </button>
                 ))}
               </div>
-              <p className="text-[10px] text-muted-foreground/50 mt-1">Nevybráno = všechny</p>
+              <p className="text-[10px] text-muted-foreground/70 mt-1">Nevybráno = všechny</p>
             </div>
 
             {/* Price range */}
@@ -262,7 +262,7 @@ export function JobForm({ open, onOpenChange, editingJob, onSave }: Props) {
             <div>
               <Label>Email pro notifikace</Label>
               <Input type="email" value={notifyEmail} onChange={(e) => setNotifyEmail(e.target.value)} placeholder="pepa@firma.cz" />
-              <p className="text-[10px] text-muted-foreground/50 mt-1">Nové nabídky se odešlou na tento email</p>
+              <p className="text-[10px] text-muted-foreground/70 mt-1">Nové nabídky se odešlou na tento email</p>
             </div>
           </div>
 

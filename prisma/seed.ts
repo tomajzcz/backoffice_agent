@@ -1214,12 +1214,36 @@ async function seedRenovations() {
   console.log(`  ✓ Created ${createdRenovations.length} renovations + ${renovationTasks.length} linked tasks`)
 }
 
+// ─── Automation Configs ──────────────────────────────────────────────────────
+
+async function seedAutomationConfigs() {
+  await prisma.automationConfig.createMany({
+    data: [
+      {
+        key: "daily_reminder_calls",
+        isActive: true,
+        recipientEmail: "",
+        cronExpr: "0 5 * * *",
+      },
+      {
+        key: "weekly_executive_report",
+        isActive: true,
+        recipientEmail: "management@pragueproperties.cz",
+        cronExpr: "0 7 * * 1",
+      },
+    ],
+  })
+  console.log("  ✓ 2 automation configs seeded")
+}
+
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
   console.log("\n🌱 Starting database seed...\n")
 
   // Clear existing data in correct FK order
+  await prisma.executiveReportRun.deleteMany()
+  await prisma.automationConfig.deleteMany()
   await prisma.agentRun.deleteMany()
   await prisma.callLog.deleteMany()
   await prisma.document.deleteMany()
@@ -1249,6 +1273,7 @@ async function main() {
   await seedRenovations()
   await seedInvestors()
   await seedDocuments()
+  await seedAutomationConfigs()
 
   // Summary
   const counts = {

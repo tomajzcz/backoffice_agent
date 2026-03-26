@@ -17,7 +17,7 @@ export function ExplainabilitySection({ data }: Props) {
     <div className="mt-4 border border-border/30 rounded-lg overflow-hidden">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center gap-2 px-3 py-2.5 text-xs text-muted-foreground/70 hover:text-muted-foreground hover:bg-secondary/30 transition-colors"
+        className="w-full flex items-center gap-2 px-3 py-2.5 text-xs text-muted-foreground/70 hover:text-muted-foreground hover:bg-secondary/50 transition-all duration-150"
       >
         <Info className="w-3.5 h-3.5 shrink-0" />
         <span style={{ fontFamily: "Syne, sans-serif" }} className="font-medium">
@@ -36,7 +36,7 @@ export function ExplainabilitySection({ data }: Props) {
           <div>
             <div className="flex items-center gap-1.5 mb-1.5">
               <Wrench className="w-3 h-3 text-primary/60" />
-              <span className="text-[10px] uppercase tracking-wider text-muted-foreground/50 font-medium"
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-medium"
                 style={{ fontFamily: "'JetBrains Mono', monospace" }}
               >
                 Použité nástroje
@@ -45,7 +45,7 @@ export function ExplainabilitySection({ data }: Props) {
             <div className="space-y-1.5">
               {data.toolsUsed.map((tool, i) => (
                 <div key={i} className="pl-4">
-                  <span className="text-xs text-foreground/80 font-medium">{tool.toolLabel}</span>
+                  <span className="text-xs text-foreground font-medium">{tool.toolLabel}</span>
                   {Object.keys(tool.params).length > 0 && (
                     <div className="mt-0.5 flex flex-wrap gap-1">
                       {Object.entries(tool.params).map(([key, val]) => (
@@ -68,7 +68,7 @@ export function ExplainabilitySection({ data }: Props) {
             <div>
               <div className="flex items-center gap-1.5 mb-1.5">
                 <Database className="w-3 h-3 text-primary/60" />
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground/50 font-medium"
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-medium"
                   style={{ fontFamily: "'JetBrains Mono', monospace" }}
                 >
                   Zdroje dat
@@ -90,7 +90,7 @@ export function ExplainabilitySection({ data }: Props) {
           {/* Record counts */}
           {Object.keys(data.recordCounts).length > 0 && (
             <div className="pl-4">
-              <span className="text-[10px] text-muted-foreground/50 font-mono">
+              <span className="text-[10px] text-muted-foreground/70 font-mono">
                 Počet záznamů:{" "}
                 {Object.entries(data.recordCounts)
                   .map(([, count]) => count)
@@ -104,7 +104,7 @@ export function ExplainabilitySection({ data }: Props) {
             <div>
               <div className="flex items-center gap-1.5 mb-1.5">
                 <Filter className="w-3 h-3 text-primary/60" />
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground/50 font-medium"
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-medium"
                   style={{ fontFamily: "'JetBrains Mono', monospace" }}
                 >
                   Aplikované filtry
@@ -128,7 +128,7 @@ export function ExplainabilitySection({ data }: Props) {
             <div>
               <div className="flex items-center gap-1.5 mb-1.5">
                 <AlertTriangle className="w-3 h-3 text-amber-500/60" />
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground/50 font-medium"
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-medium"
                   style={{ fontFamily: "'JetBrains Mono', monospace" }}
                 >
                   Omezení

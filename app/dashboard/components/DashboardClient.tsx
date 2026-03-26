@@ -165,7 +165,7 @@ export function DashboardClient({ initialJobs }: { initialJobs: Job[] }) {
             <h1 className="text-lg font-bold" style={{ fontFamily: "Syne, sans-serif" }}>
               Monitoring Dashboard
             </h1>
-            <p className="text-xs text-muted-foreground/60 mt-0.5">
+            <p className="text-xs text-muted-foreground/80 mt-0.5">
               Správa monitorovacích jobů a jejich výsledků
             </p>
           </div>
@@ -198,7 +198,7 @@ export function DashboardClient({ initialJobs }: { initialJobs: Job[] }) {
 
         {jobs.length === 0 ? (
           <div className="text-center py-20">
-            <p className="text-muted-foreground/40 mb-4">Žádné monitorovací joby</p>
+            <p className="text-muted-foreground/80 mb-4">Žádné monitorovací joby</p>
             <Button onClick={handleAdd} variant="outline" size="sm" className="gap-1.5">
               <Plus className="w-3.5 h-3.5" />
               Vytvořit první monitoring
@@ -214,7 +214,7 @@ export function DashboardClient({ initialJobs }: { initialJobs: Job[] }) {
                 {/* Header row */}
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <h2 className="text-sm font-semibold text-foreground/90" style={{ fontFamily: "Syne, sans-serif" }}>
+                    <h2 className="text-sm font-semibold text-foreground" style={{ fontFamily: "Syne, sans-serif" }}>
                       {job.name}
                     </h2>
                     <span className={`px-2 py-0.5 rounded text-[10px] border font-mono ${STATUS_STYLES[job.status] ?? ""}`}>
@@ -268,10 +268,10 @@ export function DashboardClient({ initialJobs }: { initialJobs: Job[] }) {
 
                 {/* Info */}
                 {job.description && (
-                  <p className="text-xs text-muted-foreground/60 mb-2">{job.description}</p>
+                  <p className="text-xs text-muted-foreground/80 mb-2">{job.description}</p>
                 )}
 
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-muted-foreground/50 font-mono">
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-muted-foreground/70 font-mono">
                   <span>Lokalita: <span className="text-foreground/60">{job.configJson.locality}</span></span>
                   <span>Filtry: <span className="text-foreground/60">{formatFilters(job.configJson)}</span></span>
                   <span>Cron: {job.cronExpr}</span>

@@ -50,17 +50,17 @@ function SortIcon({ column, sortBy, sortOrder }: { column: string; sortBy: strin
 }
 
 function CellValue({ column, value }: { column: Column; value: unknown }) {
-  if (value === null || value === undefined) return <span className="text-muted-foreground/30">—</span>
+  if (value === null || value === undefined) return <span className="text-muted-foreground/70">—</span>
 
   switch (column.type) {
     case "id":
-      return <span className="text-muted-foreground/50 font-mono">{String(value)}</span>
+      return <span className="text-muted-foreground/70 font-mono">{String(value)}</span>
     case "currency":
       return <span className="text-amber-400 font-mono font-medium">{formatCZK(value as number)}</span>
     case "number":
       return <span className="font-mono">{String(value)}</span>
     case "date":
-      return <span className="text-muted-foreground/60 font-mono">{String(value).includes("T") && String(value).includes(":") ? formatDateTime(String(value)) : formatDate(String(value))}</span>
+      return <span className="text-muted-foreground/80 font-mono">{String(value).includes("T") && String(value).includes(":") ? formatDateTime(String(value)) : formatDate(String(value))}</span>
     case "link":
       return (
         <a
@@ -93,14 +93,14 @@ export function EntityTable({
 }: Props) {
   return (
     <div>
-      <div className="overflow-x-auto rounded-lg border border-border/40">
+      <div className="overflow-x-auto rounded-xl border border-border/30 overflow-hidden">
         <table className="w-full text-xs">
           <thead>
-            <tr className="bg-secondary/30">
+            <tr className="bg-muted/30">
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className={`text-left py-2.5 px-3 text-[10px] uppercase tracking-wider text-muted-foreground/60 font-medium ${
+                  className={`text-left py-2.5 px-3 text-[10px] uppercase tracking-wider text-muted-foreground/80 font-medium ${
                     col.sortable ? "cursor-pointer hover:text-foreground/80 select-none" : ""
                   }`}
                   style={{ fontFamily: "'JetBrains Mono', monospace" }}
@@ -118,7 +118,7 @@ export function EntityTable({
           <tbody>
             {data.length === 0 ? (
               <tr>
-                <td colSpan={columns.length + 1} className="py-10 text-center text-muted-foreground/40">
+                <td colSpan={columns.length + 1} className="py-10 text-center text-muted-foreground/80">
                   Žádné záznamy
                 </td>
               </tr>
@@ -126,7 +126,7 @@ export function EntityTable({
               data.map((row, i) => (
                 <tr
                   key={String(row.id)}
-                  className={`border-t border-border/20 hover:bg-secondary/20 transition-colors ${rowClassName?.(row) ?? ""} ${onRowClick ? "cursor-pointer" : ""}`}
+                  className={`border-t border-border/20 hover:bg-secondary/20 transition-colors duration-100 ${rowClassName?.(row) ?? ""} ${onRowClick ? "cursor-pointer" : ""}`}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
                 >
                   {columns.map((col) => (
@@ -163,7 +163,7 @@ export function EntityTable({
       {/* Pagination */}
       {totalPages > 0 && (
         <div className="flex items-center justify-between mt-3 px-1">
-          <p className="text-[10px] text-muted-foreground/50 font-mono">
+          <p className="text-[10px] text-muted-foreground/70 font-mono">
             Celkem {totalCount} záznamů
           </p>
           <div className="flex items-center gap-2">
@@ -176,7 +176,7 @@ export function EntityTable({
             >
               <ChevronLeft className="w-3.5 h-3.5" />
             </Button>
-            <span className="text-[10px] text-muted-foreground/60 font-mono">
+            <span className="text-[10px] text-muted-foreground/80 font-mono">
               {page} / {totalPages}
             </span>
             <Button

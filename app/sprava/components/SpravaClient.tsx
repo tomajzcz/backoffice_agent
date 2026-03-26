@@ -444,7 +444,7 @@ export function SpravaClient({ initialProperties }: Props) {
 
       <Tabs value={activeTab} onValueChange={handleTabChange}>
         <div className="flex items-center justify-between gap-4 mb-4">
-          <TabsList className="bg-secondary/50 border border-border/30 h-9">
+          <TabsList>
             {Object.entries(TAB_LABELS).map(([key, label]) => (
               <TabsTrigger key={key} value={key} className="text-xs">
                 {label}
@@ -454,7 +454,7 @@ export function SpravaClient({ initialProperties }: Props) {
 
           <div className="flex items-center gap-2">
             <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/40" />
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/60" />
               <Input
                 placeholder="Hledat..."
                 className="h-8 w-48 pl-8 text-xs"
@@ -472,7 +472,7 @@ export function SpravaClient({ initialProperties }: Props) {
         {Object.keys(TAB_LABELS).map((tab) => (
           <TabsContent key={tab} value={tab}>
             {isPending && !tabStates[tab as EntityTab].loaded ? (
-              <div className="flex items-center justify-center py-20 text-muted-foreground/40 text-sm">
+              <div className="flex items-center justify-center py-20 text-muted-foreground/60 text-sm">
                 Načítám data...
               </div>
             ) : (

@@ -14,6 +14,12 @@ import { runScraper, type JobConfig } from "@/lib/scraper"
 import { filterNewListings } from "@/lib/scraper/dedup"
 import { sendMonitoringEmail } from "@/lib/scraper/notify"
 import { listCallLogs } from "@/lib/db/queries/call-logs"
+import {
+  getAutomationConfig,
+  upsertAutomationConfig,
+  listReportRuns,
+} from "@/lib/db/queries/executive-reports"
+import { generateExecutiveReport } from "@/lib/executive-report/generate"
 
 type CallLogItem = Awaited<ReturnType<typeof listCallLogs>>["items"][number]
 import {
@@ -297,5 +303,126 @@ export async function triggerReminderCallsAction(): Promise<ActionResult> {
     }
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : "Chyba při spouštění hovorů" }
+  }
+}
+
+// ─── Executive Report Actions ────────────────────────────────────────────────
+
+export interface ReportRunRow {
+  id: number
+  status: string
+  trigger: string
+  recipientEmail: string
+  slideCount: number | null
+  errorMessage: string | null
+  startedAt: string
+  finishedAt: string | null
+}
+
+export interface AutomationConfigRow {
+  key: string
+  isActive: boolean
+  recipientEmail: string
+  cronExpr: string
+}
+
+export async function listReportRunsAction(filters: {
+  limit: number
+  offset: number
+}): Promise<{ items: ReportRunRow[]; total: number }> {
+  const { items, total } = await listReportRuns(filters)
+
+  return {
+    items: items.map((r) => ({
+      id: r.id,
+      status: r.status,
+      trigger: r.trigger,
+      recipientEmail: r.recipientEmail,
+      slideCount: r.slideCount,
+      errorMessage: r.errorMessage,
+      startedAt: r.startedAt.toISOString(),
+      finishedAt: r.finishedAt?.toISOString() ?? null,
+    })),
+    total,
+  }
+}
+
+export async function getAutomationConfigAction(
+  key: string,
+): Promise<AutomationConfigRow | null> {
+  const config = await getAutomationConfig(key)
+  if (!config) return null
+  return {
+    key: config.key,
+    isActive: config.isActive,
+    recipientEmail: config.recipientEmail,
+    cronExpr: config.cronExpr,
+  }
+}
+
+export async function toggleAutomationConfigAction(
+  key: string,
+): Promise<ActionResult> {
+  try {
+    const config = await getAutomationConfig(key)
+    if (!config) return { success: false, error: "Konfigurace nenalezena" }
+    await upsertAutomationConfig(key, { isActive: !config.isActive })
+    revalidatePath("/dashboard")
+    return { success: true }
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : "Chyba" }
+  }
+}
+
+export async function updateAutomationEmailAction(
+  key: string,
+  email: string,
+): Promise<ActionResult> {
+  try {
+    await upsertAutomationConfig(key, { recipientEmail: email })
+    revalidatePath("/dashboard")
+    return { success: true }
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : "Chyba" }
+  }
+}
+
+export async function updateAutomationConfigAction(
+  key: string,
+  data: { isActive: boolean; cronExpr: string; recipientEmail: string },
+): Promise<ActionResult> {
+  try {
+    await upsertAutomationConfig(key, data)
+    revalidatePath("/dashboard")
+    return { success: true }
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : "Chyba při ukládání" }
+  }
+}
+
+export async function triggerExecutiveReportAction(): Promise<ActionResult> {
+  try {
+    const config = await getAutomationConfig("weekly_executive_report")
+    if (!config) {
+      return { success: false, error: "Konfigurace executive reportu nenalezena" }
+    }
+
+    const result = await generateExecutiveReport({
+      recipientEmail: config.recipientEmail,
+      trigger: "manual",
+      slideCount: 5,
+    })
+
+    revalidatePath("/dashboard")
+
+    if (result.success) {
+      return {
+        success: true,
+        data: { message: `Report vygenerován a odeslán na ${config.recipientEmail}` },
+      }
+    }
+    return { success: false, error: result.error ?? "Neznámá chyba" }
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : "Chyba při generování reportu" }
   }
 }

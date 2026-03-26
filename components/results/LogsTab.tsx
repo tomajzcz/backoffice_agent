@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { RefreshCw, Wrench } from "lucide-react"
+import { RefreshCw, Wrench, Activity } from "lucide-react"
+import { EmptyState } from "./EmptyState"
 import type { AgentRunRecord, ToolCallLog } from "@/types/agent"
 
 function formatRelative(date: string): string {
@@ -55,23 +56,18 @@ export function LogsTab() {
   }
 
   if (runs.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-40 gap-2 text-muted-foreground/40">
-        <Wrench className="w-5 h-5" />
-        <p className="text-sm">Zatím žádné spuštění</p>
-      </div>
-    )
+    return <EmptyState icon={Activity} title="Zatím žádné spuštění" description="Logy se zobrazí po prvním dotazu" />
   }
 
   return (
     <div className="animate-fade-in">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-xs text-muted-foreground/50 font-mono">
+        <p className="text-xs text-muted-foreground/70 font-mono">
           {runs.length} posledních spuštění
         </p>
         <button
           onClick={fetchRuns}
-          className="text-muted-foreground/40 hover:text-foreground transition-colors"
+          className="text-muted-foreground/60 hover:text-foreground transition-colors"
         >
           <RefreshCw className="w-3.5 h-3.5" />
         </button>
@@ -85,10 +81,10 @@ export function LogsTab() {
               className="rounded-lg border border-border/40 bg-secondary/20 px-3 py-2.5 space-y-1.5"
             >
               <div className="flex items-start justify-between gap-2">
-                <p className="text-xs text-foreground/80 leading-snug line-clamp-2 flex-1">
+                <p className="text-xs text-foreground leading-snug line-clamp-2 flex-1">
                   {run.userQuery}
                 </p>
-                <span className="text-[10px] text-muted-foreground/40 font-mono shrink-0 mt-0.5">
+                <span className="text-[10px] text-muted-foreground/60 font-mono shrink-0 mt-0.5">
                   {formatRelative(run.createdAt)}
                 </span>
               </div>

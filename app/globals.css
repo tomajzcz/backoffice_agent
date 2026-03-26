@@ -6,36 +6,36 @@
 
 @layer base {
   :root {
-    /* Dark enterprise terminal theme */
-    --background: 240 6% 7%;         /* #0f0f11 */
-    --foreground: 240 10% 95%;       /* #f1f1f5 */
+    /* Premium dark navy theme */
+    --background: 214 14% 5%;         /* #0B0F14 */
+    --foreground: 210 20% 98%;        /* #F8FAFC — near-white */
 
-    --card: 240 6% 9%;               /* #131315 */
-    --card-foreground: 240 10% 95%;
+    --card: 214 14% 7%;               /* #0F1419 */
+    --card-foreground: 210 20% 98%;
 
-    --popover: 240 6% 9%;
-    --popover-foreground: 240 10% 95%;
+    --popover: 214 14% 8%;            /* #111820 */
+    --popover-foreground: 210 20% 98%;
 
-    --primary: 38 92% 50%;           /* amber #f59e0b */
-    --primary-foreground: 240 6% 7%;
+    --primary: 38 92% 50%;            /* amber #f59e0b */
+    --primary-foreground: 214 14% 5%;
 
-    --secondary: 240 5% 14%;         /* subtle surface */
-    --secondary-foreground: 240 10% 85%;
+    --secondary: 214 12% 11%;         /* #161B22 */
+    --secondary-foreground: 210 15% 88%;
 
-    --muted: 240 5% 12%;
-    --muted-foreground: 240 5% 55%;
+    --muted: 214 12% 13%;             /* #1A2029 */
+    --muted-foreground: 214 10% 63%;
 
-    --accent: 240 5% 16%;
-    --accent-foreground: 240 10% 95%;
+    --accent: 214 12% 15%;            /* #1E2530 */
+    --accent-foreground: 210 20% 95%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 240 5% 16%;
-    --input: 240 5% 14%;
+    --border: 214 12% 16%;            /* #1F2937 */
+    --input: 214 12% 13%;
     --ring: 38 92% 50%;
 
-    --radius: 0.5rem;
+    --radius: 0.625rem;
 
     /* Chart palette */
     --chart-1: 38 92% 50%;    /* amber */
@@ -45,11 +45,12 @@
     --chart-5: 0 72% 51%;     /* red */
 
     /* Custom */
-    --surface-1: 240 6% 11%;
-    --surface-2: 240 5% 15%;
+    --surface-1: 214 14% 9%;
+    --surface-2: 214 12% 13%;
+    --surface-3: 214 12% 17%;
     --amber: 38 92% 50%;
     --emerald: 160 84% 39%;
-    --line-grid: rgba(255,255,255,0.04);
+    --sidebar-width: 220px;
   }
 }
 
@@ -66,11 +67,16 @@
 
   body {
     @apply bg-background text-foreground;
-    background-image:
-      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
-    background-size: 40px 40px;
+    background-image: radial-gradient(
+      ellipse 80% 50% at 50% -20%,
+      hsl(var(--primary) / 0.03),
+      transparent
+    );
     min-height: 100vh;
+  }
+
+  button, a, input, textarea, select {
+    @apply transition-colors duration-150;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -103,6 +109,21 @@
   }
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--muted-foreground));
+  }
+
+  .glow-primary {
+    box-shadow: 0 0 20px -5px hsl(var(--primary) / 0.15),
+                0 0 40px -10px hsl(var(--primary) / 0.1);
+  }
+
+  .glow-primary-sm {
+    box-shadow: 0 0 12px -4px hsl(var(--primary) / 0.2);
+  }
+
+  .glass {
+    background: hsl(var(--card) / 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
 }
 
@@ -164,6 +185,24 @@
   animation: pulse-mic 1.5s ease-out infinite;
 }
 
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.2s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.15s ease-out forwards;
+}
+
 /* Shimmer skeleton */
 .shimmer {
   background: linear-gradient(
@@ -192,7 +231,7 @@
 .prose-agent h3 { @apply text-xs uppercase tracking-wider text-muted-foreground; }
 
 .prose-agent p {
-  @apply text-foreground/90 mb-2;
+  @apply text-foreground mb-2;
 }
 
 .prose-agent strong {
@@ -207,7 +246,7 @@
 .prose-agent ol { @apply list-decimal; }
 
 .prose-agent li {
-  @apply text-foreground/85 text-sm;
+  @apply text-foreground/95 text-sm;
 }
 
 .prose-agent code {
@@ -229,5 +268,5 @@
 }
 
 .prose-agent td {
-  @apply py-1.5 border-b border-border/50 text-foreground/85;
+  @apply py-1.5 border-b border-border/50 text-foreground/95;
 }

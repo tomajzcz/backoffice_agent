@@ -2,9 +2,17 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Play, Loader2, ChevronLeft, ChevronRight, Phone } from "lucide-react"
+import { Play, Loader2, ChevronLeft, ChevronRight, Phone, Settings, Pause } from "lucide-react"
 import { CALL_STATUS_LABELS } from "@/lib/constants/labels"
-import { listCallLogsAction, triggerReminderCallsAction, type CallLogRow } from "../actions"
+import {
+  listCallLogsAction,
+  triggerReminderCallsAction,
+  updateAutomationConfigAction,
+  toggleAutomationConfigAction,
+  type CallLogRow,
+  type AutomationConfigRow,
+} from "../actions"
+import { AutomationSettingsDialog } from "./AutomationSettingsDialog"
 
 const PAGE_SIZE = 20
 
@@ -18,8 +26,10 @@ const STATUS_STYLES: Record<string, string> = {
 
 export function ReminderCallsTab({
   initialCallLogs,
+  initialConfig,
 }: {
   initialCallLogs: { items: CallLogRow[]; total: number }
+  initialConfig: AutomationConfigRow | null
 }) {
   const [items, setItems] = useState<CallLogRow[]>(initialCallLogs.items)
   const [total, setTotal] = useState(initialCallLogs.total)
@@ -27,6 +37,9 @@ export function ReminderCallsTab({
   const [running, setRunning] = useState(false)
   const [runResult, setRunResult] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [config, setConfig] = useState(initialConfig)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [toggling, setToggling] = useState(false)
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
@@ -57,6 +70,32 @@ export function ReminderCallsTab({
     }
   }
 
+  async function handleToggle() {
+    if (!config) return
+    setToggling(true)
+    const result = await toggleAutomationConfigAction(config.key)
+    setToggling(false)
+    if (result.success) {
+      setConfig({ ...config, isActive: !config.isActive })
+    } else {
+      setError(result.error)
+    }
+  }
+
+  async function handleSettingsSave(data: {
+    isActive: boolean
+    cronExpr: string
+    recipientEmail: string
+  }) {
+    if (!config) return
+    const result = await updateAutomationConfigAction(config.key, data)
+    if (result.success) {
+      setConfig({ ...config, ...data })
+    } else {
+      setError(result.error)
+    }
+  }
+
   async function handlePageChange(newPage: number) {
     if (newPage < 1 || newPage > totalPages) return
     await refreshLogs(newPage)
@@ -70,29 +109,65 @@ export function ReminderCallsTab({
           <div>
             <div className="flex items-center gap-2 mb-1">
               <Phone className="w-4 h-4 text-primary/70" />
-              <h3 className="text-sm font-semibold text-foreground/90" style={{ fontFamily: "Syne, sans-serif" }}>
+              <h3 className="text-sm font-semibold text-foreground" style={{ fontFamily: "Syne, sans-serif" }}>
                 Denní připomínkové hovory
               </h3>
+              {config && (
+                <span
+                  className={`px-2 py-0.5 rounded text-[10px] border font-mono ${
+                    config.isActive
+                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                      : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                  }`}
+                >
+                  {config.isActive ? "Aktivní" : "Pozastaveno"}
+                </span>
+              )}
             </div>
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-muted-foreground/50 font-mono">
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-muted-foreground/70 font-mono">
               <span>Plán: <span className="text-foreground/60">Denně v 7:00 (Praha)</span></span>
-              <span>Cron: 0 5 * * *</span>
+              <span>Cron: {config?.cronExpr ?? "0 5 * * *"}</span>
               <span>ElevenLabs Voice AI</span>
             </div>
           </div>
-          <Button
-            onClick={handleTrigger}
-            disabled={running}
-            size="sm"
-            className="h-8 gap-1.5"
-          >
-            {running ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Play className="w-3.5 h-3.5" />
+          <div className="flex items-center gap-2">
+            {config && (
+              <>
+                <Button
+                  onClick={() => setSettingsOpen(true)}
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  title="Nastavení"
+                >
+                  <Settings className="w-3.5 h-3.5" />
+                </Button>
+                <Button
+                  onClick={handleToggle}
+                  disabled={toggling}
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  title={config.isActive ? "Pozastavit" : "Aktivovat"}
+                >
+                  <Pause className="w-3.5 h-3.5" />
+                </Button>
+              </>
             )}
-            Spustit teď
-          </Button>
+            <Button
+              onClick={handleTrigger}
+              disabled={running}
+              size="sm"
+              className="h-8 gap-1.5"
+            >
+              {running ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Play className="w-3.5 h-3.5" />
+              )}
+              Spustit teď
+            </Button>
+          </div>
         </div>
 
         {runResult && (
@@ -112,25 +187,25 @@ export function ReminderCallsTab({
       {/* Call logs table */}
       {items.length === 0 ? (
         <div className="text-center py-20">
-          <p className="text-muted-foreground/40">Zatím žádné záznamy o hovorech</p>
+          <p className="text-muted-foreground/80">Zatím žádné záznamy o hovorech</p>
         </div>
       ) : (
         <div className="rounded-xl border border-border/40 overflow-hidden">
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-border/30 bg-secondary/20">
-                <th className="px-4 py-2.5 text-left font-mono text-muted-foreground/60 font-normal">Datum</th>
-                <th className="px-4 py-2.5 text-left font-mono text-muted-foreground/60 font-normal">Klient</th>
-                <th className="px-4 py-2.5 text-left font-mono text-muted-foreground/60 font-normal">Telefon</th>
-                <th className="px-4 py-2.5 text-left font-mono text-muted-foreground/60 font-normal">Nemovitost</th>
-                <th className="px-4 py-2.5 text-left font-mono text-muted-foreground/60 font-normal">Prohlídka</th>
-                <th className="px-4 py-2.5 text-left font-mono text-muted-foreground/60 font-normal">Status</th>
+                <th className="px-4 py-2.5 text-left font-mono text-muted-foreground/80 font-normal">Datum</th>
+                <th className="px-4 py-2.5 text-left font-mono text-muted-foreground/80 font-normal">Klient</th>
+                <th className="px-4 py-2.5 text-left font-mono text-muted-foreground/80 font-normal">Telefon</th>
+                <th className="px-4 py-2.5 text-left font-mono text-muted-foreground/80 font-normal">Nemovitost</th>
+                <th className="px-4 py-2.5 text-left font-mono text-muted-foreground/80 font-normal">Prohlídka</th>
+                <th className="px-4 py-2.5 text-left font-mono text-muted-foreground/80 font-normal">Status</th>
               </tr>
             </thead>
             <tbody>
               {items.map((log) => (
                 <tr key={log.id} className="border-b border-border/20 hover:bg-secondary/20 transition-colors">
-                  <td className="px-4 py-2.5 text-muted-foreground/60 font-mono">
+                  <td className="px-4 py-2.5 text-muted-foreground/80 font-mono">
                     {new Date(log.callDate).toLocaleDateString("cs-CZ", { day: "numeric", month: "short" })}
                   </td>
                   <td className="px-4 py-2.5 text-foreground/85 font-medium">{log.clientName}</td>
@@ -159,7 +234,7 @@ export function ReminderCallsTab({
 
           {/* Pagination */}
           <div className="flex items-center justify-between px-4 py-2.5 border-t border-border/20 bg-secondary/10">
-            <span className="text-[10px] text-muted-foreground/40 font-mono">
+            <span className="text-[10px] text-muted-foreground/80 font-mono">
               Celkem {total} záznamů
             </span>
             <div className="flex items-center gap-2">
@@ -172,7 +247,7 @@ export function ReminderCallsTab({
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
               </Button>
-              <span className="text-[10px] text-muted-foreground/50 font-mono">
+              <span className="text-[10px] text-muted-foreground/70 font-mono">
                 {page} / {totalPages}
               </span>
               <Button
@@ -187,6 +262,18 @@ export function ReminderCallsTab({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Settings dialog */}
+      {config && (
+        <AutomationSettingsDialog
+          open={settingsOpen}
+          onOpenChange={setSettingsOpen}
+          config={config}
+          title="Nastavení připomínkových hovorů"
+          showEmail={false}
+          onSave={handleSettingsSave}
+        />
       )}
     </div>
   )

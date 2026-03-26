@@ -41,6 +41,7 @@ export async function GET(req: NextRequest) {
           price: l.price,
           district: l.district,
           disposition: l.disposition,
+          areaM2: l.areaM2,
         })))
       }
 

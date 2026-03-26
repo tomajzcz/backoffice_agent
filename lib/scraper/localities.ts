@@ -27,234 +27,384 @@ export function slugify(str: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// Bezrealitky — slug resolution
+// Bezrealitky — OSM region ID resolution (used by GraphQL API)
 // ---------------------------------------------------------------------------
 
 /**
- * Override map for localities where the bezrealitky URL slug doesn't match
- * simple slugification (mainly Prague district aliases).
+ * Map locality names to OpenStreetMap relation IDs used by Bezrealitky GraphQL API.
+ * IDs sourced from bezrealitky's own `czechRegions` query.
  */
-const BEZREALITKY_SLUG_OVERRIDES: Record<string, string> = {
-  // Prague district aliases (short name → full slug)
-  "holešovice": "praha-7-holesovice",
-  "žižkov": "praha-3-zizkov",
-  "vinohrady": "praha-2-vinohrady",
-  "smíchov": "praha-5-smichov",
-  "staré město": "praha-1-stare-mesto",
-  "nusle": "praha-4-nusle",
-  "dejvice": "praha-6-dejvice",
-  "karlín": "praha-8-karlin",
-  "vršovice": "praha-10-vrsovice",
-  "vysočany": "praha-9-vysocany",
-  "stodůlky": "praha-13-stodulky",
-  "letná": "praha-7-letna",
-  "bubeneč": "praha-6-bubenec",
-  "břevnov": "praha-6-brevnov",
-  "podolí": "praha-4-podoli",
-  "braník": "praha-4-branik",
-  "kobylisy": "praha-8-kobylisy",
-  "libeň": "praha-8-liben",
-  "prosek": "praha-9-prosek",
-  "černý most": "praha-9-cerny-most",
-  "háje": "praha-11-haje",
-  "chodov": "praha-11-chodov",
-  "modřany": "praha-12-modrany",
-  "řepy": "praha-17-repy",
-  "zbraslav": "praha-16-zbraslav",
-  "suchdol": "praha-6-suchdol",
-  "troja": "praha-7-troja",
-  // Full Prague district names
-  "praha 7 holešovice": "praha-7-holesovice",
-  "praha 3 žižkov": "praha-3-zizkov",
-  "praha 2 vinohrady": "praha-2-vinohrady",
-  "praha 5 smíchov": "praha-5-smichov",
-  "praha 1 staré město": "praha-1-stare-mesto",
-  "praha 4 nusle": "praha-4-nusle",
-  "praha 6 dejvice": "praha-6-dejvice",
-  "praha 8 karlín": "praha-8-karlin",
-  "praha 10 vršovice": "praha-10-vrsovice",
-  "praha 9 vysočany": "praha-9-vysocany",
-  "praha 13 stodůlky": "praha-13-stodulky",
+const BEZREALITKY_OSM_MAP: Record<string, string[]> = {
+  // ── Praha celá ────────────────────────────────────────────────────────
+  "praha": ["R435514"],
+
+  // ── Prague numbered districts → whole Praha (API doesn't have Praha 1-13) ──
+  "praha 1": ["R435514"],
+  "praha 2": ["R435514"],
+  "praha 3": ["R435514"],
+  "praha 4": ["R435514"],
+  "praha 5": ["R435514"],
+  "praha 6": ["R435514"],
+  "praha 7": ["R435514"],
+  "praha 8": ["R435514"],
+  "praha 9": ["R435514"],
+  "praha 10": ["R435514"],
+  "praha 11": ["R435514"],
+  "praha 12": ["R435514"],
+  "praha 13": ["R435514"],
+
+  // ── Prague neighborhoods (katastrální území) ──────────────────────────
+  "staré město": ["R428812"],
+  "vinohrady": ["R428841"],
+  "žižkov": ["R428824"],
+  "nusle": ["R434063"],
+  "smíchov": ["R429381"],
+  "dejvice": ["R428868"],
+  "holešovice": ["R429461"],
+  "karlín": ["R435856"],
+  "vysočany": ["R426322"],
+  "vršovice": ["R428842"],
+  "stodůlky": ["R429527"],
+  "bubeneč": ["R433262"],
+  "břevnov": ["R429357"],
+  "podolí": ["R431322"],
+  "braník": ["R431321"],
+  "kobylisy": ["R426433"],
+  "libeň": ["R429373"],
+  "prosek": ["R434448"],
+  "černý most": ["R434268"],
+  "háje": ["R433253"],
+  "chodov": ["R428988"],
+  "modřany": ["R428820"],
+  "řepy": ["R431329"],
+  "zbraslav": ["R429554"],
+  "suchdol": ["R428596"],
+  "troja": ["R429379"],
+  "letná": ["R429461"], // part of Holešovice
+
+  // ── Full Prague district names ────────────────────────────────────────
+  "praha 1 staré město": ["R428812"],
+  "praha 2 vinohrady": ["R428841"],
+  "praha 3 žižkov": ["R428824"],
+  "praha 4 nusle": ["R434063"],
+  "praha 5 smíchov": ["R429381"],
+  "praha 6 dejvice": ["R428868"],
+  "praha 7 holešovice": ["R429461"],
+  "praha 8 karlín": ["R435856"],
+  "praha 9 vysočany": ["R426322"],
+  "praha 10 vršovice": ["R428842"],
+  "praha 13 stodůlky": ["R429527"],
+
+  // ── Kraje ČR ──────────────────────────────────────────────────────────
+  "jihočeský kraj": ["R442321"],
+  "jihočeský": ["R442321"],
+  "jihomoravský kraj": ["R442311"],
+  "jihomoravský": ["R442311"],
+  "karlovarský kraj": ["R442314"],
+  "karlovarský": ["R442314"],
+  "kraj vysočina": ["R442453"],
+  "vysočina": ["R442453"],
+  "královéhradecký kraj": ["R442463"],
+  "královéhradecký": ["R442463"],
+  "liberecký kraj": ["R442455"],
+  "liberecký": ["R442455"],
+  "moravskoslezský kraj": ["R442461"],
+  "moravskoslezský": ["R442461"],
+  "olomoucký kraj": ["R442459"],
+  "olomoucký": ["R442459"],
+  "pardubický kraj": ["R442460"],
+  "pardubický": ["R442460"],
+  "plzeňský kraj": ["R442466"],
+  "plzeňský": ["R442466"],
+  "středočeský kraj": ["R442397"],
+  "středočeský": ["R442397"],
+  "ústecký kraj": ["R442452"],
+  "ústecký": ["R442452"],
+  "zlínský kraj": ["R442449"],
+  "zlínský": ["R442449"],
+
+  // ── Krajská města (okres-level OSM IDs) ───────────────────────────────
+  "brno": ["R442273"],
+  "plzeň": ["R442399"],
+  "ostrava": ["R435509"],
+  "olomouc": ["R441579"],
+  "liberec": ["R441329"],
+  "české budějovice": ["R441226"],
+  "hradec králové": ["R441917"],
+  "pardubice": ["R441234"],
+  "zlín": ["R440923"],
+  "karlovy vary": ["R440798"],
+  "ústí nad labem": ["R442324"],
+  "jihlava": ["R441185"],
+
+  // ── Další velká města (okres-level) ───────────────────────────────────
+  "kladno": ["R441012"],
+  "most": ["R442417"],
+  "teplice": ["R441318"],
+  "děčín": ["R441155"],
+  "chomutov": ["R441437"],
+  "opava": ["R442422"],
+  "frýdek-místek": ["R442412"],
+  "karviná": ["R441200"],
+  "havířov": ["R442412"], // okres Frýdek-Místek
+  "třinec": ["R442412"],  // okres Frýdek-Místek
+  "mladá boleslav": ["R441981"],
+  "kolín": ["R441315"],
+  "příbram": ["R441434"],
+  "tábor": ["R441914"],
+  "písek": ["R441220"],
+  "strakonice": ["R442320"],
+  "český krumlov": ["R441576"],
+  "jindřichův hradec": ["R441869"],
+  "prostějov": ["R441197"],
+  "přerov": ["R441573"],
+  "šumperk": ["R442318"],
+  "znojmo": ["R441326"],
+  "břeclav": ["R442309"],
+  "hodonín": ["R441151"],
+  "vyškov": ["R442281"],
+  "blansko": ["R441793"],
+  "kroměříž": ["R442410"],
+  "uherské hradiště": ["R442087"],
+  "vsetín": ["R442448"],
+  "jičín": ["R441987"],
+  "trutnov": ["R442413"],
+  "náchod": ["R441794"],
+  "rychnov nad kněžnou": ["R441223"],
+  "svitavy": ["R441911"],
+  "chrudim": ["R441441"],
+  "ústí nad orlicí": ["R441218"],
+  "jablonec nad nisou": ["R441190"],
+  "česká lípa": ["R441446"],
+  "semily": ["R442423"],
+  "domažlice": ["R441864"],
+  "klatovy": ["R442419"],
+  "rokycany": ["R441451"],
+  "sokolov": ["R442313"],
+  "cheb": ["R441990"],
+  "havlíčkův brod": ["R441984"],
+  "pelhřimov": ["R441102"],
+  "třebíč": ["R442210"],
+  "žďár nad sázavou": ["R441749"],
+  "nový jičín": ["R441188"],
+  "bruntál": ["R441193"],
+  "beroun": ["R442335"],
+  "benešov": ["R441521"],
+  "kutná hora": ["R441861"],
+  "mělník": ["R442362"],
+  "nymburk": ["R441570"],
+  "rakovník": ["R442396"],
+  "litoměřice": ["R442420"],
+  "louny": ["R441333"],
 }
 
 /**
- * Resolve a locality string to a bezrealitky URL slug.
- * Never returns null — falls back to dynamic slugification.
+ * Resolve a locality string to Bezrealitky OSM region IDs.
+ * Returns an array of IDs (may be empty if locality is unknown).
  */
-export function resolveBezrealitkySlug(locality: string): string {
+export function resolveBezrealitkyOsmIds(locality: string): string[] {
   const normalized = locality.toLowerCase().trim()
 
-  // Check override map (substring match for backward compat)
-  for (const [key, slug] of Object.entries(BEZREALITKY_SLUG_OVERRIDES)) {
-    if (normalized.includes(key)) return slug
-  }
+  // Exact match first
+  if (BEZREALITKY_OSM_MAP[normalized]) return BEZREALITKY_OSM_MAP[normalized]
 
-  // Also check without diacritics
+  // Exact match without diacritics
   const noDia = removeDiacritics(normalized)
-  for (const [key, slug] of Object.entries(BEZREALITKY_SLUG_OVERRIDES)) {
-    if (noDia.includes(removeDiacritics(key))) return slug
+  for (const [key, ids] of Object.entries(BEZREALITKY_OSM_MAP)) {
+    if (removeDiacritics(key) === noDia) return ids
   }
 
-  // Fallback: generate slug dynamically — works for most Czech cities
-  // e.g. "Plzeň" → "plzen", "České Budějovice" → "ceske-budejovice"
-  return slugify(locality)
+  // Substring match (e.g. "Praha 7 Holešovice" contains "holešovice")
+  for (const [key, ids] of Object.entries(BEZREALITKY_OSM_MAP)) {
+    if (normalized.includes(key)) return ids
+  }
+
+  // Substring match without diacritics
+  for (const [key, ids] of Object.entries(BEZREALITKY_OSM_MAP)) {
+    if (noDia.includes(removeDiacritics(key))) return ids
+  }
+
+  return []
 }
 
 // ---------------------------------------------------------------------------
 // Sreality — locality ID resolution
 // ---------------------------------------------------------------------------
 
-export interface SrealityLocality {
-  id: number
-  paramName: "locality_district_id" | "locality_region_id"
-}
+export type SrealityLocality =
+  | { type: "param"; id: number; paramName: "locality_district_id" | "locality_region_id" }
+  | { type: "region"; region: string; regionEntityType: string }
 
 /**
  * Comprehensive Sreality locality map.
- * Prague districts use locality_district_id, everything else uses locality_region_id.
+ * IDs sourced from Sreality's own suggest API (/api/cs/v2/suggest).
+ *
+ * Praha celá → locality_region_id=10
+ * Praha X (numbered districts) → locality_district_id with legacy IDs (5001–5060)
+ * Prague neighborhoods → region + region_entity_type=osmm (text-based search)
+ * Cities → locality_district_id (okres level, new IDs from suggest API)
+ * Regions → locality_region_id (new IDs from suggest API)
  */
 const SREALITY_MAP: Record<string, SrealityLocality> = {
-  // ── Prague districts (locality_district_id) ──────────────────────────
-  "praha 1": { id: 5001, paramName: "locality_district_id" },
-  "praha 1 staré město": { id: 5001, paramName: "locality_district_id" },
-  "staré město": { id: 5001, paramName: "locality_district_id" },
-  "praha 2": { id: 5002, paramName: "locality_district_id" },
-  "praha 2 vinohrady": { id: 5002, paramName: "locality_district_id" },
-  "vinohrady": { id: 5002, paramName: "locality_district_id" },
-  "praha 3": { id: 5003, paramName: "locality_district_id" },
-  "praha 3 žižkov": { id: 5003, paramName: "locality_district_id" },
-  "žižkov": { id: 5003, paramName: "locality_district_id" },
-  "praha 4": { id: 5004, paramName: "locality_district_id" },
-  "praha 4 nusle": { id: 5004, paramName: "locality_district_id" },
-  "nusle": { id: 5004, paramName: "locality_district_id" },
-  "praha 5": { id: 5005, paramName: "locality_district_id" },
-  "praha 5 smíchov": { id: 5005, paramName: "locality_district_id" },
-  "smíchov": { id: 5005, paramName: "locality_district_id" },
-  "praha 6": { id: 5058, paramName: "locality_district_id" },
-  "praha 6 dejvice": { id: 5058, paramName: "locality_district_id" },
-  "dejvice": { id: 5058, paramName: "locality_district_id" },
-  "praha 7": { id: 5006, paramName: "locality_district_id" },
-  "praha 7 holešovice": { id: 5006, paramName: "locality_district_id" },
-  "holešovice": { id: 5006, paramName: "locality_district_id" },
-  "praha 8": { id: 5008, paramName: "locality_district_id" },
-  "praha 8 karlín": { id: 5008, paramName: "locality_district_id" },
-  "karlín": { id: 5008, paramName: "locality_district_id" },
-  "praha 9": { id: 5009, paramName: "locality_district_id" },
-  "praha 9 vysočany": { id: 5009, paramName: "locality_district_id" },
-  "vysočany": { id: 5009, paramName: "locality_district_id" },
-  "praha 10": { id: 5010, paramName: "locality_district_id" },
-  "praha 10 vršovice": { id: 5010, paramName: "locality_district_id" },
-  "vršovice": { id: 5010, paramName: "locality_district_id" },
-  "praha 11": { id: 5059, paramName: "locality_district_id" },
-  "praha 12": { id: 5060, paramName: "locality_district_id" },
-  "praha 13": { id: 5057, paramName: "locality_district_id" },
-  "praha 13 stodůlky": { id: 5057, paramName: "locality_district_id" },
-  "stodůlky": { id: 5057, paramName: "locality_district_id" },
+  // ── Praha celá ────────────────────────────────────────────────────────
+  "praha": { type: "param", id: 10, paramName: "locality_region_id" },
 
-  // ── Praha celá (region) ──────────────────────────────────────────────
-  "praha": { id: 10, paramName: "locality_region_id" },
+  // ── Praha numbered districts (legacy locality_district_id) ────────────
+  "praha 1": { type: "param", id: 5001, paramName: "locality_district_id" },
+  "praha 2": { type: "param", id: 5002, paramName: "locality_district_id" },
+  "praha 3": { type: "param", id: 5003, paramName: "locality_district_id" },
+  "praha 4": { type: "param", id: 5004, paramName: "locality_district_id" },
+  "praha 5": { type: "param", id: 5005, paramName: "locality_district_id" },
+  "praha 6": { type: "param", id: 5058, paramName: "locality_district_id" },
+  "praha 7": { type: "param", id: 5006, paramName: "locality_district_id" },
+  "praha 8": { type: "param", id: 5008, paramName: "locality_district_id" },
+  "praha 9": { type: "param", id: 5009, paramName: "locality_district_id" },
+  "praha 10": { type: "param", id: 5010, paramName: "locality_district_id" },
+  "praha 11": { type: "param", id: 5059, paramName: "locality_district_id" },
+  "praha 12": { type: "param", id: 5060, paramName: "locality_district_id" },
+  "praha 13": { type: "param", id: 5057, paramName: "locality_district_id" },
+
+  // ── Praha neighborhoods (region text search) ──────────────────────────
+  "praha 1 staré město": { type: "region", region: "Staré Město", regionEntityType: "osmm" },
+  "staré město": { type: "region", region: "Staré Město", regionEntityType: "osmm" },
+  "praha 2 vinohrady": { type: "region", region: "Vinohrady", regionEntityType: "osmm" },
+  "vinohrady": { type: "region", region: "Vinohrady", regionEntityType: "osmm" },
+  "praha 3 žižkov": { type: "region", region: "Žižkov", regionEntityType: "osmm" },
+  "žižkov": { type: "region", region: "Žižkov", regionEntityType: "osmm" },
+  "praha 4 nusle": { type: "region", region: "Nusle", regionEntityType: "osmm" },
+  "nusle": { type: "region", region: "Nusle", regionEntityType: "osmm" },
+  "praha 5 smíchov": { type: "region", region: "Smíchov", regionEntityType: "osmm" },
+  "smíchov": { type: "region", region: "Smíchov", regionEntityType: "osmm" },
+  "praha 6 dejvice": { type: "region", region: "Dejvice", regionEntityType: "osmm" },
+  "dejvice": { type: "region", region: "Dejvice", regionEntityType: "osmm" },
+  "praha 7 holešovice": { type: "region", region: "Holešovice", regionEntityType: "osmm" },
+  "holešovice": { type: "region", region: "Holešovice", regionEntityType: "osmm" },
+  "praha 8 karlín": { type: "region", region: "Karlín", regionEntityType: "osmm" },
+  "karlín": { type: "region", region: "Karlín", regionEntityType: "osmm" },
+  "praha 9 vysočany": { type: "region", region: "Vysočany", regionEntityType: "osmm" },
+  "vysočany": { type: "region", region: "Vysočany", regionEntityType: "osmm" },
+  "praha 10 vršovice": { type: "region", region: "Vršovice", regionEntityType: "osmm" },
+  "vršovice": { type: "region", region: "Vršovice", regionEntityType: "osmm" },
+  "praha 13 stodůlky": { type: "region", region: "Stodůlky", regionEntityType: "osmm" },
+  "stodůlky": { type: "region", region: "Stodůlky", regionEntityType: "osmm" },
+  "kobylisy": { type: "region", region: "Kobylisy", regionEntityType: "osmm" },
+  "libeň": { type: "region", region: "Libeň", regionEntityType: "osmm" },
+  "prosek": { type: "region", region: "Prosek", regionEntityType: "osmm" },
+  "černý most": { type: "region", region: "Černý Most", regionEntityType: "osmm" },
+  "háje": { type: "region", region: "Háje", regionEntityType: "osmm" },
+  "chodov": { type: "region", region: "Chodov", regionEntityType: "osmm" },
+  "modřany": { type: "region", region: "Modřany", regionEntityType: "osmm" },
+  "řepy": { type: "region", region: "Řepy", regionEntityType: "osmm" },
+  "zbraslav": { type: "region", region: "Zbraslav", regionEntityType: "osmm" },
+  "suchdol": { type: "region", region: "Suchdol", regionEntityType: "osmm" },
+  "troja": { type: "region", region: "Troja", regionEntityType: "osmm" },
+  "letná": { type: "region", region: "Holešovice", regionEntityType: "osmm" },
+  "bubeneč": { type: "region", region: "Bubeneč", regionEntityType: "osmm" },
+  "břevnov": { type: "region", region: "Břevnov", regionEntityType: "osmm" },
+  "podolí": { type: "region", region: "Podolí", regionEntityType: "osmm" },
+  "braník": { type: "region", region: "Braník", regionEntityType: "osmm" },
 
   // ── Kraje ČR (locality_region_id) ────────────────────────────────────
-  "jihočeský kraj": { id: 101, paramName: "locality_region_id" },
-  "jihočeský": { id: 101, paramName: "locality_region_id" },
-  "plzeňský kraj": { id: 103, paramName: "locality_region_id" },
-  "plzeňský": { id: 103, paramName: "locality_region_id" },
-  "středočeský kraj": { id: 104, paramName: "locality_region_id" },
-  "středočeský": { id: 104, paramName: "locality_region_id" },
-  "ústecký kraj": { id: 106, paramName: "locality_region_id" },
-  "ústecký": { id: 106, paramName: "locality_region_id" },
-  "liberecký kraj": { id: 107, paramName: "locality_region_id" },
-  "liberecký": { id: 107, paramName: "locality_region_id" },
-  "královéhradecký kraj": { id: 108, paramName: "locality_region_id" },
-  "královéhradecký": { id: 108, paramName: "locality_region_id" },
-  "pardubický kraj": { id: 109, paramName: "locality_region_id" },
-  "pardubický": { id: 109, paramName: "locality_region_id" },
-  "vysočina": { id: 110, paramName: "locality_region_id" },
-  "kraj vysočina": { id: 110, paramName: "locality_region_id" },
-  "jihomoravský kraj": { id: 116, paramName: "locality_region_id" },
-  "jihomoravský": { id: 116, paramName: "locality_region_id" },
-  "olomoucký kraj": { id: 120, paramName: "locality_region_id" },
-  "olomoucký": { id: 120, paramName: "locality_region_id" },
-  "zlínský kraj": { id: 113, paramName: "locality_region_id" },
-  "zlínský": { id: 113, paramName: "locality_region_id" },
-  "moravskoslezský kraj": { id: 124, paramName: "locality_region_id" },
-  "moravskoslezský": { id: 124, paramName: "locality_region_id" },
-  "karlovarský kraj": { id: 102, paramName: "locality_region_id" },
-  "karlovarský": { id: 102, paramName: "locality_region_id" },
+  "jihočeský kraj": { type: "param", id: 1, paramName: "locality_region_id" },
+  "jihočeský": { type: "param", id: 1, paramName: "locality_region_id" },
+  "plzeňský kraj": { type: "param", id: 2, paramName: "locality_region_id" },
+  "plzeňský": { type: "param", id: 2, paramName: "locality_region_id" },
+  "karlovarský kraj": { type: "param", id: 3, paramName: "locality_region_id" },
+  "karlovarský": { type: "param", id: 3, paramName: "locality_region_id" },
+  "ústecký kraj": { type: "param", id: 4, paramName: "locality_region_id" },
+  "ústecký": { type: "param", id: 4, paramName: "locality_region_id" },
+  "liberecký kraj": { type: "param", id: 5, paramName: "locality_region_id" },
+  "liberecký": { type: "param", id: 5, paramName: "locality_region_id" },
+  "královéhradecký kraj": { type: "param", id: 6, paramName: "locality_region_id" },
+  "královéhradecký": { type: "param", id: 6, paramName: "locality_region_id" },
+  "pardubický kraj": { type: "param", id: 7, paramName: "locality_region_id" },
+  "pardubický": { type: "param", id: 7, paramName: "locality_region_id" },
+  "olomoucký kraj": { type: "param", id: 8, paramName: "locality_region_id" },
+  "olomoucký": { type: "param", id: 8, paramName: "locality_region_id" },
+  "zlínský kraj": { type: "param", id: 9, paramName: "locality_region_id" },
+  "zlínský": { type: "param", id: 9, paramName: "locality_region_id" },
+  "středočeský kraj": { type: "param", id: 11, paramName: "locality_region_id" },
+  "středočeský": { type: "param", id: 11, paramName: "locality_region_id" },
+  "moravskoslezský kraj": { type: "param", id: 12, paramName: "locality_region_id" },
+  "moravskoslezský": { type: "param", id: 12, paramName: "locality_region_id" },
+  "vysočina": { type: "param", id: 13, paramName: "locality_region_id" },
+  "kraj vysočina": { type: "param", id: 13, paramName: "locality_region_id" },
+  "jihomoravský kraj": { type: "param", id: 14, paramName: "locality_region_id" },
+  "jihomoravský": { type: "param", id: 14, paramName: "locality_region_id" },
 
-  // ── Krajská města a velká města (locality_region_id) ─────────────────
-  "brno": { id: 116, paramName: "locality_region_id" },
-  "plzeň": { id: 103, paramName: "locality_region_id" },
-  "ostrava": { id: 124, paramName: "locality_region_id" },
-  "olomouc": { id: 120, paramName: "locality_region_id" },
-  "liberec": { id: 107, paramName: "locality_region_id" },
-  "české budějovice": { id: 101, paramName: "locality_region_id" },
-  "hradec králové": { id: 108, paramName: "locality_region_id" },
-  "pardubice": { id: 109, paramName: "locality_region_id" },
-  "zlín": { id: 113, paramName: "locality_region_id" },
-  "karlovy vary": { id: 102, paramName: "locality_region_id" },
-  "ústí nad labem": { id: 106, paramName: "locality_region_id" },
-  "jihlava": { id: 110, paramName: "locality_region_id" },
+  // ── Krajská města (locality_district_id = okres) ──────────────────────
+  "brno": { type: "param", id: 72, paramName: "locality_district_id" },
+  "plzeň": { type: "param", id: 12, paramName: "locality_district_id" },
+  "ostrava": { type: "param", id: 65, paramName: "locality_district_id" },
+  "olomouc": { type: "param", id: 42, paramName: "locality_district_id" },
+  "liberec": { type: "param", id: 22, paramName: "locality_district_id" },
+  "české budějovice": { type: "param", id: 1, paramName: "locality_district_id" },
+  "hradec králové": { type: "param", id: 28, paramName: "locality_district_id" },
+  "pardubice": { type: "param", id: 32, paramName: "locality_district_id" },
+  "zlín": { type: "param", id: 38, paramName: "locality_district_id" },
+  "karlovy vary": { type: "param", id: 10, paramName: "locality_district_id" },
+  "ústí nad labem": { type: "param", id: 27, paramName: "locality_district_id" },
+  "jihlava": { type: "param", id: 67, paramName: "locality_district_id" },
 
-  // Další velká města
-  "kladno": { id: 104, paramName: "locality_region_id" },
-  "most": { id: 106, paramName: "locality_region_id" },
-  "teplice": { id: 106, paramName: "locality_region_id" },
-  "děčín": { id: 106, paramName: "locality_region_id" },
-  "chomutov": { id: 106, paramName: "locality_region_id" },
-  "opava": { id: 124, paramName: "locality_region_id" },
-  "frýdek-místek": { id: 124, paramName: "locality_region_id" },
-  "karviná": { id: 124, paramName: "locality_region_id" },
-  "havířov": { id: 124, paramName: "locality_region_id" },
-  "třinec": { id: 124, paramName: "locality_region_id" },
-  "mladá boleslav": { id: 104, paramName: "locality_region_id" },
-  "kolín": { id: 104, paramName: "locality_region_id" },
-  "příbram": { id: 104, paramName: "locality_region_id" },
-  "tábor": { id: 101, paramName: "locality_region_id" },
-  "písek": { id: 101, paramName: "locality_region_id" },
-  "strakonice": { id: 101, paramName: "locality_region_id" },
-  "český krumlov": { id: 101, paramName: "locality_region_id" },
-  "jindřichův hradec": { id: 101, paramName: "locality_region_id" },
-  "prostějov": { id: 120, paramName: "locality_region_id" },
-  "přerov": { id: 120, paramName: "locality_region_id" },
-  "šumperk": { id: 120, paramName: "locality_region_id" },
-  "znojmo": { id: 116, paramName: "locality_region_id" },
-  "břeclav": { id: 116, paramName: "locality_region_id" },
-  "hodonín": { id: 116, paramName: "locality_region_id" },
-  "vyškov": { id: 116, paramName: "locality_region_id" },
-  "blansko": { id: 116, paramName: "locality_region_id" },
-  "kroměříž": { id: 113, paramName: "locality_region_id" },
-  "uherské hradiště": { id: 113, paramName: "locality_region_id" },
-  "vsetín": { id: 113, paramName: "locality_region_id" },
-  "jičín": { id: 108, paramName: "locality_region_id" },
-  "trutnov": { id: 108, paramName: "locality_region_id" },
-  "náchod": { id: 108, paramName: "locality_region_id" },
-  "rychnov nad kněžnou": { id: 108, paramName: "locality_region_id" },
-  "svitavy": { id: 109, paramName: "locality_region_id" },
-  "chrudim": { id: 109, paramName: "locality_region_id" },
-  "ústí nad orlicí": { id: 109, paramName: "locality_region_id" },
-  "jablonec nad nisou": { id: 107, paramName: "locality_region_id" },
-  "česká lípa": { id: 107, paramName: "locality_region_id" },
-  "semily": { id: 107, paramName: "locality_region_id" },
-  "domažlice": { id: 103, paramName: "locality_region_id" },
-  "klatovy": { id: 103, paramName: "locality_region_id" },
-  "rokycany": { id: 103, paramName: "locality_region_id" },
-  "sokolov": { id: 102, paramName: "locality_region_id" },
-  "cheb": { id: 102, paramName: "locality_region_id" },
-  "havlíčkův brod": { id: 110, paramName: "locality_region_id" },
-  "pelhřimov": { id: 110, paramName: "locality_region_id" },
-  "třebíč": { id: 110, paramName: "locality_region_id" },
-  "žďár nad sázavou": { id: 110, paramName: "locality_region_id" },
-  "nový jičín": { id: 124, paramName: "locality_region_id" },
-  "bruntál": { id: 124, paramName: "locality_region_id" },
-  "beroun": { id: 104, paramName: "locality_region_id" },
-  "benešov": { id: 104, paramName: "locality_region_id" },
-  "kutná hora": { id: 104, paramName: "locality_region_id" },
-  "mělník": { id: 104, paramName: "locality_region_id" },
-  "nymburk": { id: 104, paramName: "locality_region_id" },
-  "rakovník": { id: 104, paramName: "locality_region_id" },
-  "litoměřice": { id: 106, paramName: "locality_region_id" },
-  "louny": { id: 106, paramName: "locality_region_id" },
+  // ── Další velká města (locality_district_id = okres) ──────────────────
+  "kladno": { type: "param", id: 50, paramName: "locality_district_id" },
+  "most": { type: "param", id: 25, paramName: "locality_district_id" },
+  "teplice": { type: "param", id: 26, paramName: "locality_district_id" },
+  "děčín": { type: "param", id: 19, paramName: "locality_district_id" },
+  "chomutov": { type: "param", id: 20, paramName: "locality_district_id" },
+  "opava": { type: "param", id: 64, paramName: "locality_district_id" },
+  "frýdek-místek": { type: "param", id: 61, paramName: "locality_district_id" },
+  "karviná": { type: "param", id: 62, paramName: "locality_district_id" },
+  "havířov": { type: "param", id: 62, paramName: "locality_district_id" },
+  "třinec": { type: "param", id: 61, paramName: "locality_district_id" },
+  "mladá boleslav": { type: "param", id: 53, paramName: "locality_district_id" },
+  "kolín": { type: "param", id: 51, paramName: "locality_district_id" },
+  "příbram": { type: "param", id: 58, paramName: "locality_district_id" },
+  "tábor": { type: "param", id: 7, paramName: "locality_district_id" },
+  "písek": { type: "param", id: 4, paramName: "locality_district_id" },
+  "strakonice": { type: "param", id: 6, paramName: "locality_district_id" },
+  "český krumlov": { type: "param", id: 2, paramName: "locality_district_id" },
+  "jindřichův hradec": { type: "param", id: 3, paramName: "locality_district_id" },
+  "prostějov": { type: "param", id: 40, paramName: "locality_district_id" },
+  "přerov": { type: "param", id: 43, paramName: "locality_district_id" },
+  "šumperk": { type: "param", id: 44, paramName: "locality_district_id" },
+  "znojmo": { type: "param", id: 77, paramName: "locality_district_id" },
+  "břeclav": { type: "param", id: 74, paramName: "locality_district_id" },
+  "hodonín": { type: "param", id: 75, paramName: "locality_district_id" },
+  "vyškov": { type: "param", id: 76, paramName: "locality_district_id" },
+  "blansko": { type: "param", id: 71, paramName: "locality_district_id" },
+  "kroměříž": { type: "param", id: 39, paramName: "locality_district_id" },
+  "uherské hradiště": { type: "param", id: 41, paramName: "locality_district_id" },
+  "vsetín": { type: "param", id: 45, paramName: "locality_district_id" },
+  "jičín": { type: "param", id: 30, paramName: "locality_district_id" },
+  "trutnov": { type: "param", id: 36, paramName: "locality_district_id" },
+  "náchod": { type: "param", id: 31, paramName: "locality_district_id" },
+  "rychnov nad kněžnou": { type: "param", id: 33, paramName: "locality_district_id" },
+  "svitavy": { type: "param", id: 35, paramName: "locality_district_id" },
+  "chrudim": { type: "param", id: 29, paramName: "locality_district_id" },
+  "ústí nad orlicí": { type: "param", id: 37, paramName: "locality_district_id" },
+  "jablonec nad nisou": { type: "param", id: 21, paramName: "locality_district_id" },
+  "česká lípa": { type: "param", id: 18, paramName: "locality_district_id" },
+  "semily": { type: "param", id: 34, paramName: "locality_district_id" },
+  "domažlice": { type: "param", id: 8, paramName: "locality_district_id" },
+  "klatovy": { type: "param", id: 11, paramName: "locality_district_id" },
+  "rokycany": { type: "param", id: 15, paramName: "locality_district_id" },
+  "sokolov": { type: "param", id: 16, paramName: "locality_district_id" },
+  "cheb": { type: "param", id: 9, paramName: "locality_district_id" },
+  "havlíčkův brod": { type: "param", id: 66, paramName: "locality_district_id" },
+  "pelhřimov": { type: "param", id: 68, paramName: "locality_district_id" },
+  "třebíč": { type: "param", id: 69, paramName: "locality_district_id" },
+  "žďár nad sázavou": { type: "param", id: 70, paramName: "locality_district_id" },
+  "nový jičín": { type: "param", id: 63, paramName: "locality_district_id" },
+  "bruntál": { type: "param", id: 60, paramName: "locality_district_id" },
+  "beroun": { type: "param", id: 49, paramName: "locality_district_id" },
+  "benešov": { type: "param", id: 48, paramName: "locality_district_id" },
+  "kutná hora": { type: "param", id: 52, paramName: "locality_district_id" },
+  "mělník": { type: "param", id: 54, paramName: "locality_district_id" },
+  "nymburk": { type: "param", id: 55, paramName: "locality_district_id" },
+  "rakovník": { type: "param", id: 59, paramName: "locality_district_id" },
+  "litoměřice": { type: "param", id: 23, paramName: "locality_district_id" },
+  "louny": { type: "param", id: 24, paramName: "locality_district_id" },
 }
 
 /**

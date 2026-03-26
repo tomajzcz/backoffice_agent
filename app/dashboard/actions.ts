@@ -129,6 +129,7 @@ export async function runJobNowAction(id: number): Promise<ActionResult & { newC
         price: l.price,
         district: l.district,
         disposition: l.disposition,
+        areaM2: l.areaM2,
       })))
     }
 

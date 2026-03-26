@@ -127,6 +127,7 @@ export async function createMonitoringResults(
     price?: number | null
     district?: string | null
     disposition?: string | null
+    areaM2?: number | null
   }>,
 ) {
   return prisma.monitoringResult.createMany({
@@ -138,6 +139,8 @@ export async function createMonitoringResults(
       price: r.price ?? null,
       district: r.district ?? null,
       disposition: r.disposition ?? null,
+      areaM2: r.areaM2 ?? null,
+      pricePerM2: (r.price && r.areaM2) ? Math.round(r.price / r.areaM2) : null,
       isNew: true,
     })),
   })

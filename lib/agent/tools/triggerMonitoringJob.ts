@@ -38,6 +38,7 @@ export const triggerMonitoringJobTool = tool({
         price: l.price,
         district: l.district,
         disposition: l.disposition,
+        areaM2: l.areaM2,
       })))
     }
 

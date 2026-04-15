@@ -1,5 +1,6 @@
 import { google } from "googleapis"
 import { getGoogleClient } from "@/lib/google/auth"
+import { assertAllowedRecipient } from "@/lib/security/email-allowlist"
 import type { ScrapedListing } from "./types"
 
 function formatPrice(price: number | null): string {
@@ -52,6 +53,11 @@ export async function sendMonitoringEmail(
   results: ScrapedListing[],
 ): Promise<void> {
   if (results.length === 0) return
+
+  if (/[\r\n]/.test(toEmail) || /[\r\n]/.test(jobName)) {
+    throw new Error("Neplatný znak v poli To/Subject")
+  }
+  assertAllowedRecipient(toEmail)
 
   const auth = getGoogleClient()
   if (!auth) {

@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { CheckCircle2, Mail, User, FileText, Loader2, XCircle, Edit3 } from "lucide-react"
 import { formatDate } from "@/lib/utils"
+import { sanitizeHtml } from "@/lib/security/sanitize-html"
 import type { PrepareEmailDraftResult, CreateGmailDraftResult } from "@/types/agent"
 
 type ApprovalStatus = "pending" | "editing" | "approving" | "approved" | "rejected"
@@ -22,6 +23,8 @@ export function EmailDraftTab({ result }: Props) {
     isAlreadyCommitted ? { draftId: (result as CreateGmailDraftResult).draftId, savedAt: (result as CreateGmailDraftResult).savedAt } : null,
   )
   const [error, setError] = useState<string | null>(null)
+
+  const safeBody = useMemo(() => sanitizeHtml(editedBody), [editedBody])
 
   async function handleApprove() {
     setStatus("approving")
@@ -103,7 +106,7 @@ export function EmailDraftTab({ result }: Props) {
                 [&_strong]:text-foreground
                 [&_ul]:my-2 [&_li]:text-foreground [&_li]:text-sm
                 [&_a]:text-primary [&_a]:no-underline hover:[&_a]:underline"
-              dangerouslySetInnerHTML={{ __html: editedBody }}
+              dangerouslySetInnerHTML={{ __html: safeBody }}
             />
           </div>
         </div>
@@ -185,7 +188,7 @@ export function EmailDraftTab({ result }: Props) {
                 [&_strong]:text-foreground
                 [&_ul]:my-2 [&_li]:text-foreground [&_li]:text-sm
                 [&_a]:text-primary [&_a]:no-underline hover:[&_a]:underline"
-              dangerouslySetInnerHTML={{ __html: editedBody }}
+              dangerouslySetInnerHTML={{ __html: safeBody }}
             />
           )}
         </div>

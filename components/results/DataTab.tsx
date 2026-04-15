@@ -1,8 +1,8 @@
 "use client"
 
-import { CheckCircle2, AlertCircle, ExternalLink, MapPin, Home, Clock } from "lucide-react"
+import { CheckCircle2, AlertCircle, ExternalLink, MapPin, Clock } from "lucide-react"
 import { formatDate, formatCZK } from "@/lib/utils"
-import { ACQUISITION_SOURCE_LABELS as SOURCE_LABELS, CLIENT_SEGMENT_LABELS as SEGMENT_LABELS, STATUS_COLORS } from "@/lib/constants/labels"
+import { STATUS_COLORS } from "@/lib/constants/labels"
 import type { AgentToolResult } from "@/types/agent"
 
 interface Props {
@@ -110,7 +110,7 @@ export function DataTab({ result, onAction }: Props) {
             </tr>
           </thead>
           <tbody>
-            {timeline.map((row, i) => (
+            {timeline.map((row) => (
               <tr
                 key={row.month}
                 className="border-b border-border/20 hover:bg-secondary/30 transition-colors"
@@ -368,7 +368,7 @@ export function DataTab({ result, onAction }: Props) {
               </tr>
             </thead>
             <tbody>
-              {freeSlots.map((slot, i) => (
+              {freeSlots.map((slot) => (
                 <tr
                   key={`${slot.date}-${slot.start}`}
                   className="border-b border-border/20 hover:bg-secondary/30 transition-colors"

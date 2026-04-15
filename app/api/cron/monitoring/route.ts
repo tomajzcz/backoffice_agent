@@ -4,16 +4,13 @@ import { runScraper, type JobConfig } from "@/lib/scraper"
 import { filterNewListings } from "@/lib/scraper/dedup"
 import { sendMonitoringEmail } from "@/lib/scraper/notify"
 import { createMonitoringResults, updateJobLastRun } from "@/lib/db/queries/monitoring"
+import { requireBearer } from "@/lib/security/require-bearer"
 
 export const maxDuration = 60 // Vercel function timeout
 
 export async function GET(req: NextRequest) {
-  // Verify cron secret (Vercel sends this automatically)
-  const authHeader = req.headers.get("authorization")
-  const cronSecret = process.env.CRON_SECRET
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
+  const auth = requireBearer(req, "CRON_SECRET")
+  if (!auth.ok) return auth.response
 
   const jobs = await prisma.scheduledJob.findMany({
     where: { status: "ACTIVE" },

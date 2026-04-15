@@ -19,6 +19,25 @@ import {
 } from "@/lib/google/calendar"
 import { sendShowingConfirmationSms, sendShowingCancellationSms } from "@/lib/integrations/twilio"
 import { prisma } from "@/lib/db/prisma"
+import {
+  Id,
+  parseOrError,
+  CreatePropertySchema, UpdatePropertySchema,
+  CreateClientSchema, UpdateClientSchema,
+  CreateLeadSchema, UpdateLeadSchema,
+  CreateDealSchema, UpdateDealSchema,
+  CreateShowingSchema, UpdateShowingSchema,
+  CreateInvestorSchema, UpdateInvestorSchema,
+  CreateDocumentSchema, UpdateDocumentSchema,
+  CreateTaskSchema, UpdateTaskSchema,
+  CreateRenovationSchema, UpdateRenovationSchema,
+} from "@/lib/schemas/entities"
+
+function validateId(id: unknown): { ok: true; id: number } | { ok: false; error: string } {
+  const parsed = Id.safeParse(id)
+  if (!parsed.success) return { ok: false, error: "Neplatné ID" }
+  return { ok: true, id: parsed.data }
+}
 
 export type FormOption = { id: number; label: string }
 
@@ -32,14 +51,15 @@ export type ShowingActionResult =
     }}
 
 function handleError(e: unknown): { success: false; error: string } {
-  const msg = e instanceof Error ? e.message : "Neznámá chyba"
+  const msg = e instanceof Error ? e.message : String(e)
   if (msg.includes("P2003") || msg.includes("foreign key")) {
     return { success: false, error: "Nelze smazat — záznam má vazby na jiná data." }
   }
   if (msg.includes("P2002") || msg.includes("Unique constraint")) {
-    return { success: false, error: "Záznam s tímto emailem již existuje." }
+    return { success: false, error: "Záznam s těmito údaji již existuje." }
   }
-  return { success: false, error: msg }
+  console.error("[sprava/actions] error:", e)
+  return { success: false, error: "Akci se nepodařilo dokončit." }
 }
 
 // ─── Properties ───────────────────────────────────────────────────────────────
@@ -64,36 +84,33 @@ export async function listPropertiesAction(filters: {
   }
 }
 
-export async function createPropertyAction(data: {
-  address: string; district: string; type: string; price: number; areaM2: number
-  status?: string; disposition?: string; yearBuilt?: number
-  lastRenovationYear?: number; renovationNotes?: string; ownerId?: number
-}): Promise<ActionResult> {
+export async function createPropertyAction(data: unknown): Promise<ActionResult> {
+  const v = parseOrError(CreatePropertySchema, data)
+  if (!v.ok) return { success: false, error: v.error }
   try {
-    const property = await createPropertyQuery(data)
+    const property = await createPropertyQuery(v.data)
     revalidatePath("/sprava")
     return { success: true, data: { id: property.id } }
   } catch (e) { return handleError(e) }
 }
 
-export async function updatePropertyAction(id: number, data: {
-  address?: string; district?: string; type?: string; price?: number; areaM2?: number
-  status?: string; disposition?: string; yearBuilt?: number
-  lastRenovationYear?: number; renovationNotes?: string; ownerId?: number
-  lifecycleStage?: string
-}): Promise<ActionResult> {
+export async function updatePropertyAction(id: number, data: unknown): Promise<ActionResult> {
+  const idv = validateId(id); if (!idv.ok) return { success: false, error: idv.error }
+  const v = parseOrError(UpdatePropertySchema, data)
+  if (!v.ok) return { success: false, error: v.error }
   try {
-    await updatePropertyQuery(id, data)
+    await updatePropertyQuery(idv.id, v.data)
     revalidatePath("/sprava")
-    return { success: true, data: { id } }
+    return { success: true, data: { id: idv.id } }
   } catch (e) { return handleError(e) }
 }
 
 export async function deletePropertyAction(id: number): Promise<ActionResult> {
+  const idv = validateId(id); if (!idv.ok) return { success: false, error: idv.error }
   try {
-    await deletePropertyQuery(id)
+    await deletePropertyQuery(idv.id)
     revalidatePath("/sprava")
-    return { success: true, data: { id } }
+    return { success: true, data: { id: idv.id } }
   } catch (e) { return handleError(e) }
 }
 
@@ -114,31 +131,33 @@ export async function listClientsAction(filters: {
   }
 }
 
-export async function createClientAction(data: {
-  name: string; email: string; phone?: string; acquisitionSource: string; segment: string
-}): Promise<ActionResult> {
+export async function createClientAction(data: unknown): Promise<ActionResult> {
+  const v = parseOrError(CreateClientSchema, data)
+  if (!v.ok) return { success: false, error: v.error }
   try {
-    const client = await createClientQuery(data)
+    const client = await createClientQuery(v.data)
     revalidatePath("/sprava")
     return { success: true, data: { id: client.id } }
   } catch (e) { return handleError(e) }
 }
 
-export async function updateClientAction(id: number, data: {
-  name?: string; email?: string; phone?: string; acquisitionSource?: string; segment?: string
-}): Promise<ActionResult> {
+export async function updateClientAction(id: number, data: unknown): Promise<ActionResult> {
+  const idv = validateId(id); if (!idv.ok) return { success: false, error: idv.error }
+  const v = parseOrError(UpdateClientSchema, data)
+  if (!v.ok) return { success: false, error: v.error }
   try {
-    await updateClientQuery(id, data)
+    await updateClientQuery(idv.id, v.data)
     revalidatePath("/sprava")
-    return { success: true, data: { id } }
+    return { success: true, data: { id: idv.id } }
   } catch (e) { return handleError(e) }
 }
 
 export async function deleteClientAction(id: number): Promise<ActionResult> {
+  const idv = validateId(id); if (!idv.ok) return { success: false, error: idv.error }
   try {
-    await deleteClientQuery(id)
+    await deleteClientQuery(idv.id)
     revalidatePath("/sprava")
-    return { success: true, data: { id } }
+    return { success: true, data: { id: idv.id } }
   } catch (e) { return handleError(e) }
 }
 
@@ -159,31 +178,33 @@ export async function listLeadsAction(filters: {
   }
 }
 
-export async function createLeadAction(data: {
-  name: string; email: string; phone?: string; source: string; propertyInterest?: string; status?: string
-}): Promise<ActionResult> {
+export async function createLeadAction(data: unknown): Promise<ActionResult> {
+  const v = parseOrError(CreateLeadSchema, data)
+  if (!v.ok) return { success: false, error: v.error }
   try {
-    const lead = await createLeadQuery(data)
+    const lead = await createLeadQuery(v.data)
     revalidatePath("/sprava")
     return { success: true, data: { id: lead.id } }
   } catch (e) { return handleError(e) }
 }
 
-export async function updateLeadAction(id: number, data: {
-  name?: string; email?: string; phone?: string; source?: string; status?: string; propertyInterest?: string
-}): Promise<ActionResult> {
+export async function updateLeadAction(id: number, data: unknown): Promise<ActionResult> {
+  const idv = validateId(id); if (!idv.ok) return { success: false, error: idv.error }
+  const v = parseOrError(UpdateLeadSchema, data)
+  if (!v.ok) return { success: false, error: v.error }
   try {
-    await updateLeadQuery(id, data)
+    await updateLeadQuery(idv.id, v.data)
     revalidatePath("/sprava")
-    return { success: true, data: { id } }
+    return { success: true, data: { id: idv.id } }
   } catch (e) { return handleError(e) }
 }
 
 export async function deleteLeadAction(id: number): Promise<ActionResult> {
+  const idv = validateId(id); if (!idv.ok) return { success: false, error: idv.error }
   try {
-    await deleteLeadQuery(id)
+    await deleteLeadQuery(idv.id)
     revalidatePath("/sprava")
-    return { success: true, data: { id } }
+    return { success: true, data: { id: idv.id } }
   } catch (e) { return handleError(e) }
 }
 
@@ -207,31 +228,33 @@ export async function listDealsAction(filters: {
   }
 }
 
-export async function createDealAction(data: {
-  propertyId: number; clientId: number; value: number; status?: string
-}): Promise<ActionResult> {
+export async function createDealAction(data: unknown): Promise<ActionResult> {
+  const v = parseOrError(CreateDealSchema, data)
+  if (!v.ok) return { success: false, error: v.error }
   try {
-    const deal = await createDealQuery(data)
+    const deal = await createDealQuery(v.data)
     revalidatePath("/sprava")
     return { success: true, data: { id: deal.id } }
   } catch (e) { return handleError(e) }
 }
 
-export async function updateDealAction(id: number, data: {
-  status?: string; value?: number
-}): Promise<ActionResult> {
+export async function updateDealAction(id: number, data: unknown): Promise<ActionResult> {
+  const idv = validateId(id); if (!idv.ok) return { success: false, error: idv.error }
+  const v = parseOrError(UpdateDealSchema, data)
+  if (!v.ok) return { success: false, error: v.error }
   try {
-    await updateDealQuery(id, data)
+    await updateDealQuery(idv.id, v.data)
     revalidatePath("/sprava")
-    return { success: true, data: { id } }
+    return { success: true, data: { id: idv.id } }
   } catch (e) { return handleError(e) }
 }
 
 export async function deleteDealAction(id: number): Promise<ActionResult> {
+  const idv = validateId(id); if (!idv.ok) return { success: false, error: idv.error }
   try {
-    await deleteDealQuery(id)
+    await deleteDealQuery(idv.id)
     revalidatePath("/sprava")
-    return { success: true, data: { id } }
+    return { success: true, data: { id: idv.id } }
   } catch (e) { return handleError(e) }
 }
 
@@ -254,11 +277,12 @@ export async function listShowingsAction(filters: {
   }
 }
 
-export async function createShowingAction(data: {
-  propertyId: number; clientId: number; scheduledAt: string; notes?: string
-}): Promise<ShowingActionResult> {
+export async function createShowingAction(data: unknown): Promise<ShowingActionResult> {
+  const v = parseOrError(CreateShowingSchema, data)
+  if (!v.ok) return { success: false, error: v.error }
+  const parsed = v.data
   try {
-    const startDt = new Date(data.scheduledAt)
+    const startDt = new Date(parsed.scheduledAt)
     const endDt = new Date(startDt.getTime() + 60 * 60 * 1000) // 1h okno
 
     // Kontrola konfliktů v Google Calendar
@@ -298,18 +322,18 @@ export async function createShowingAction(data: {
     }
 
     // Vytvořit prohlídku v DB
-    const showing = await createShowingQuery(data)
+    const showing = await createShowingQuery(parsed)
 
     // Vytvořit event v Google Calendar (best-effort)
     try {
       const description = buildShowingEventDescription(
         showing.property.address,
         showing.client.name,
-        data.notes
+        parsed.notes
       )
       const event = await createCalendarEvent({
         summary: `Prohlídka: ${showing.property.address} – ${showing.client.name}`,
-        startDateTime: data.scheduledAt,
+        startDateTime: parsed.scheduledAt,
         description,
         location: showing.property.address,
       })
@@ -325,7 +349,7 @@ export async function createShowingAction(data: {
           clientName: showing.client.name,
           clientPhone: showing.client.phone,
           propertyAddress: showing.property.address,
-          scheduledAt: data.scheduledAt,
+          scheduledAt: parsed.scheduledAt,
         })
       }
     } catch {
@@ -337,13 +361,15 @@ export async function createShowingAction(data: {
   } catch (e) { return handleError(e) }
 }
 
-export async function updateShowingAction(id: number, data: {
-  status?: string; scheduledAt?: string; notes?: string
-}): Promise<ActionResult> {
+export async function updateShowingAction(id: number, data: unknown): Promise<ActionResult> {
+  const idv = validateId(id); if (!idv.ok) return { success: false, error: idv.error }
+  const v = parseOrError(UpdateShowingSchema, data)
+  if (!v.ok) return { success: false, error: v.error }
+  let parsed: Record<string, unknown> = { ...v.data }
   try {
     // Při zrušení: smazat kalendář + poslat SMS
-    if (data.status === "CANCELLED") {
-      const showing = await getShowingByIdQuery(id)
+    if (parsed.status === "CANCELLED") {
+      const showing = await getShowingByIdQuery(idv.id)
       if (showing) {
         // Smazat kalendářovou událost (best-effort)
         if (showing.googleCalendarEventId) {
@@ -352,8 +378,7 @@ export async function updateShowingAction(id: number, data: {
           } catch {
             // Kalendářový event se nepodařilo smazat — pokračovat
           }
-          data = { ...data }
-          ;(data as Record<string, unknown>).googleCalendarEventId = null
+          parsed = { ...parsed, googleCalendarEventId: null }
         }
         // Poslat SMS o zrušení (best-effort)
         try {
@@ -371,16 +396,17 @@ export async function updateShowingAction(id: number, data: {
       }
     }
 
-    await updateShowingQuery(id, data)
+    await updateShowingQuery(idv.id, parsed)
     revalidatePath("/sprava")
-    return { success: true, data: { id } }
+    return { success: true, data: { id: idv.id } }
   } catch (e) { return handleError(e) }
 }
 
 export async function deleteShowingAction(id: number): Promise<ActionResult> {
+  const idv = validateId(id); if (!idv.ok) return { success: false, error: idv.error }
   try {
     // Načíst prohlídku a smazat kalendářový event, pokud existuje
-    const showing = await getShowingByIdQuery(id)
+    const showing = await getShowingByIdQuery(idv.id)
     if (showing) {
       if (showing.googleCalendarEventId) {
         try {
@@ -405,9 +431,9 @@ export async function deleteShowingAction(id: number): Promise<ActionResult> {
       }
     }
 
-    await deleteShowingQuery(id)
+    await deleteShowingQuery(idv.id)
     revalidatePath("/sprava")
-    return { success: true, data: { id } }
+    return { success: true, data: { id: idv.id } }
   } catch (e) { return handleError(e) }
 }
 
@@ -456,50 +482,52 @@ export async function listTasksAction(filters: {
   }
 }
 
-export async function createTaskAction(data: {
-  title: string; description?: string; priority: string; status?: string
-  dueDate?: string; assignee?: string; propertyId?: number; dealId?: number; renovationId?: number
-}): Promise<ActionResult> {
+export async function createTaskAction(data: unknown): Promise<ActionResult> {
+  const v = parseOrError(CreateTaskSchema, data)
+  if (!v.ok) return { success: false, error: v.error }
+  const p = v.data
   try {
     const task = await createTask({
-      title: data.title,
-      description: data.description,
-      priority: data.priority as "LOW" | "MEDIUM" | "HIGH" | "URGENT",
-      dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
-      assignee: data.assignee,
-      propertyId: data.propertyId,
-      dealId: data.dealId,
-      renovationId: data.renovationId,
+      title: p.title,
+      description: p.description,
+      priority: p.priority,
+      dueDate: p.dueDate ? new Date(p.dueDate) : undefined,
+      assignee: p.assignee,
+      propertyId: p.propertyId,
+      dealId: p.dealId,
+      renovationId: p.renovationId,
     })
     revalidatePath("/sprava")
     return { success: true, data: { id: task.id } }
   } catch (e) { return handleError(e) }
 }
 
-export async function updateTaskAction(id: number, data: {
-  title?: string; description?: string; status?: string; priority?: string
-  dueDate?: string | null; assignee?: string | null; propertyId?: number; dealId?: number
-}): Promise<ActionResult> {
+export async function updateTaskAction(id: number, data: unknown): Promise<ActionResult> {
+  const idv = validateId(id); if (!idv.ok) return { success: false, error: idv.error }
+  const v = parseOrError(UpdateTaskSchema, data)
+  if (!v.ok) return { success: false, error: v.error }
+  const p = v.data
   try {
     const updateData: Record<string, unknown> = {}
-    if (data.title !== undefined) updateData.title = data.title
-    if (data.description !== undefined) updateData.description = data.description
-    if (data.status !== undefined) updateData.status = data.status
-    if (data.priority !== undefined) updateData.priority = data.priority
-    if (data.dueDate !== undefined) updateData.dueDate = data.dueDate ? new Date(data.dueDate) : null
-    if (data.assignee !== undefined) updateData.assignee = data.assignee
+    if (p.title !== undefined) updateData.title = p.title
+    if (p.description !== undefined) updateData.description = p.description
+    if (p.status !== undefined) updateData.status = p.status
+    if (p.priority !== undefined) updateData.priority = p.priority
+    if (p.dueDate !== undefined) updateData.dueDate = p.dueDate ? new Date(p.dueDate) : null
+    if (p.assignee !== undefined) updateData.assignee = p.assignee
 
-    await updateTaskQuery(id, updateData)
+    await updateTaskQuery(idv.id, updateData)
     revalidatePath("/sprava")
-    return { success: true, data: { id } }
+    return { success: true, data: { id: idv.id } }
   } catch (e) { return handleError(e) }
 }
 
 export async function deleteTaskAction(id: number): Promise<ActionResult> {
+  const idv = validateId(id); if (!idv.ok) return { success: false, error: idv.error }
   try {
-    await deleteTaskQuery(id)
+    await deleteTaskQuery(idv.id)
     revalidatePath("/sprava")
-    return { success: true, data: { id } }
+    return { success: true, data: { id: idv.id } }
   } catch (e) { return handleError(e) }
 }
 
@@ -530,31 +558,33 @@ export async function listInvestorsAction(filters: {
   }
 }
 
-export async function createInvestorAction(data: {
-  name: string; email: string; phone?: string; company?: string; notes?: string
-}): Promise<ActionResult> {
+export async function createInvestorAction(data: unknown): Promise<ActionResult> {
+  const v = parseOrError(CreateInvestorSchema, data)
+  if (!v.ok) return { success: false, error: v.error }
   try {
-    const inv = await createInvestorQuery(data)
+    const inv = await createInvestorQuery(v.data)
     revalidatePath("/sprava")
     return { success: true, data: { id: inv.id } }
   } catch (e) { return handleError(e) }
 }
 
-export async function updateInvestorAction(id: number, data: {
-  name?: string; email?: string; phone?: string; company?: string; notes?: string
-}): Promise<ActionResult> {
+export async function updateInvestorAction(id: number, data: unknown): Promise<ActionResult> {
+  const idv = validateId(id); if (!idv.ok) return { success: false, error: idv.error }
+  const v = parseOrError(UpdateInvestorSchema, data)
+  if (!v.ok) return { success: false, error: v.error }
   try {
-    await updateInvestorQuery(id, data)
+    await updateInvestorQuery(idv.id, v.data)
     revalidatePath("/sprava")
-    return { success: true, data: { id } }
+    return { success: true, data: { id: idv.id } }
   } catch (e) { return handleError(e) }
 }
 
 export async function deleteInvestorAction(id: number): Promise<ActionResult> {
+  const idv = validateId(id); if (!idv.ok) return { success: false, error: idv.error }
   try {
-    await deleteInvestorQuery(id)
+    await deleteInvestorQuery(idv.id)
     revalidatePath("/sprava")
-    return { success: true, data: { id } }
+    return { success: true, data: { id: idv.id } }
   } catch (e) { return handleError(e) }
 }
 
@@ -576,31 +606,33 @@ export async function listDocumentsAction(filters: {
   }
 }
 
-export async function createDocumentAction(data: {
-  propertyId: number; type: string; name: string; url?: string; notes?: string
-}): Promise<ActionResult> {
+export async function createDocumentAction(data: unknown): Promise<ActionResult> {
+  const v = parseOrError(CreateDocumentSchema, data)
+  if (!v.ok) return { success: false, error: v.error }
   try {
-    const doc = await createDocumentQuery(data)
+    const doc = await createDocumentQuery(v.data)
     revalidatePath("/sprava")
     return { success: true, data: { id: doc.id } }
   } catch (e) { return handleError(e) }
 }
 
-export async function updateDocumentAction(id: number, data: {
-  propertyId?: number; type?: string; name?: string; url?: string; notes?: string
-}): Promise<ActionResult> {
+export async function updateDocumentAction(id: number, data: unknown): Promise<ActionResult> {
+  const idv = validateId(id); if (!idv.ok) return { success: false, error: idv.error }
+  const v = parseOrError(UpdateDocumentSchema, data)
+  if (!v.ok) return { success: false, error: v.error }
   try {
-    await updateDocumentQuery(id, data)
+    await updateDocumentQuery(idv.id, v.data)
     revalidatePath("/sprava")
-    return { success: true, data: { id } }
+    return { success: true, data: { id: idv.id } }
   } catch (e) { return handleError(e) }
 }
 
 export async function deleteDocumentAction(id: number): Promise<ActionResult> {
+  const idv = validateId(id); if (!idv.ok) return { success: false, error: idv.error }
   try {
-    await deleteDocumentQuery(id)
+    await deleteDocumentQuery(idv.id)
     revalidatePath("/sprava")
-    return { success: true, data: { id } }
+    return { success: true, data: { id: idv.id } }
   } catch (e) { return handleError(e) }
 }
 
@@ -614,49 +646,49 @@ export async function listRenovationsAction(filters: {
   return { items: items as Record<string, unknown>[], total }
 }
 
-export async function createRenovationAction(data: {
-  propertyId: number; phase?: string; plannedEndAt?: string
-  nextStep?: string; blockers?: string; ownerName?: string; contractorName?: string
-  budgetPlanned?: number; budgetActual?: number; notes?: string
-}): Promise<ActionResult> {
+export async function createRenovationAction(data: unknown): Promise<ActionResult> {
+  const v = parseOrError(CreateRenovationSchema, data)
+  if (!v.ok) return { success: false, error: v.error }
+  const p = v.data
   try {
     const renovation = await createRenovationQuery({
-      ...data,
-      plannedEndAt: data.plannedEndAt ? new Date(data.plannedEndAt) : undefined,
+      ...p,
+      plannedEndAt: p.plannedEndAt ? new Date(p.plannedEndAt) : undefined,
     })
     revalidatePath("/sprava")
     return { success: true, data: { id: renovation.id } }
   } catch (e) { return handleError(e) }
 }
 
-export async function updateRenovationAction(id: number, data: {
-  phase?: string; status?: string; plannedEndAt?: string | null
-  nextStep?: string | null; blockers?: string | null
-  ownerName?: string | null; contractorName?: string | null
-  budgetPlanned?: number | null; budgetActual?: number | null; notes?: string | null
-}): Promise<ActionResult> {
+export async function updateRenovationAction(id: number, data: unknown): Promise<ActionResult> {
+  const idv = validateId(id); if (!idv.ok) return { success: false, error: idv.error }
+  const v = parseOrError(UpdateRenovationSchema, data)
+  if (!v.ok) return { success: false, error: v.error }
+  const p = v.data
   try {
-    await updateRenovationQuery(id, {
-      ...data,
-      plannedEndAt: data.plannedEndAt !== undefined
-        ? (data.plannedEndAt ? new Date(data.plannedEndAt) : null)
+    await updateRenovationQuery(idv.id, {
+      ...p,
+      plannedEndAt: p.plannedEndAt !== undefined
+        ? (p.plannedEndAt ? new Date(p.plannedEndAt) : null)
         : undefined,
     })
     revalidatePath("/sprava")
-    return { success: true, data: { id } }
+    return { success: true, data: { id: idv.id } }
   } catch (e) { return handleError(e) }
 }
 
 export async function deleteRenovationAction(id: number): Promise<ActionResult> {
+  const idv = validateId(id); if (!idv.ok) return { success: false, error: idv.error }
   try {
-    await deleteRenovationQuery(id)
+    await deleteRenovationQuery(idv.id)
     revalidatePath("/sprava")
-    return { success: true, data: { id } }
+    return { success: true, data: { id: idv.id } }
   } catch (e) { return handleError(e) }
 }
 
 export async function getRenovationDetailAction(id: number) {
-  const r = await getRenovationByIdQuery(id)
+  const idv = validateId(id); if (!idv.ok) return null
+  const r = await getRenovationByIdQuery(idv.id)
   if (!r) return null
 
   const now = new Date()

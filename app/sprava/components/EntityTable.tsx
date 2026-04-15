@@ -123,7 +123,7 @@ export function EntityTable({
                 </td>
               </tr>
             ) : (
-              data.map((row, i) => (
+              data.map((row) => (
                 <tr
                   key={String(row.id)}
                   className={`border-t border-border/20 hover:bg-secondary/20 transition-colors duration-100 ${rowClassName?.(row) ?? ""} ${onRowClick ? "cursor-pointer" : ""}`}

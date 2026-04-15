@@ -13,7 +13,7 @@ export default function Home() {
     typeof crypto !== "undefined" ? crypto.randomUUID() : Math.random().toString(36).slice(2)
   )
 
-  const { messages, input, isLoading, setInput, handleSubmit, handleInputChange, append, error, data } = useChat({
+  const { messages, input, isLoading, setInput, handleSubmit, append, error, data } = useChat({
     api: "/api/chat",
     body: { sessionId: sessionId.current },
     onError: (err) => console.error("[useChat] error:", err),

@@ -1,43 +1,44 @@
 import { NextRequest, NextResponse } from "next/server"
+import { z } from "zod"
 import { buildReportPdf, buildTablePdf } from "@/lib/export/pdf"
 import { buildTimestampedFilename } from "@/lib/export/filenames"
 import { storeFile, getFile } from "@/lib/export/file-store"
+import { rateLimit } from "@/lib/security/ratelimit"
 
 const PREFIX = "pdf-"
 
+const ReportBodySchema = z.object({
+  type: z.literal("report"),
+  title: z.string().min(1).max(300),
+  markdown: z.string().min(1).max(200_000),
+})
+
+const TableBodySchema = z.object({
+  type: z.literal("table"),
+  title: z.string().min(1).max(300),
+  headers: z.array(z.string().max(500)).min(1).max(50),
+  rows: z.array(z.array(z.string().max(2000)).max(50)).max(2000),
+})
+
+const BodySchema = z.discriminatedUnion("type", [ReportBodySchema, TableBodySchema])
+
 export async function POST(req: NextRequest) {
+  const rl = rateLimit(req, { key: "pdf-gen", limit: 30, windowMs: 60_000 })
+  if (!rl.ok) return rl.response
+
   try {
-    const body = await req.json()
-    const { type, title, markdown, headers, rows } = body as {
-      type: "report" | "table"
-      title: string
-      markdown?: string
-      headers?: string[]
-      rows?: string[][]
+    const raw = await req.json()
+    const parsed = BodySchema.safeParse(raw)
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Neplatné údaje pro PDF" }, { status: 400 })
     }
 
-    if (!title || !type) {
-      return NextResponse.json({ error: "Missing title or type" }, { status: 400 })
-    }
-
-    let buffer: Buffer
-
-    if (type === "report") {
-      if (!markdown) {
-        return NextResponse.json({ error: "Missing markdown for report PDF" }, { status: 400 })
-      }
-      buffer = await buildReportPdf(title, markdown)
-    } else if (type === "table") {
-      if (!headers || !rows || !Array.isArray(headers) || !Array.isArray(rows)) {
-        return NextResponse.json({ error: "Missing headers/rows for table PDF" }, { status: 400 })
-      }
-      buffer = await buildTablePdf(title, headers, rows)
-    } else {
-      return NextResponse.json({ error: "Invalid type" }, { status: 400 })
-    }
+    const buffer = parsed.data.type === "report"
+      ? await buildReportPdf(parsed.data.title, parsed.data.markdown)
+      : await buildTablePdf(parsed.data.title, parsed.data.headers, parsed.data.rows)
 
     const token = await storeFile(buffer, PREFIX)
-    const filename = buildTimestampedFilename(title, "pdf")
+    const filename = buildTimestampedFilename(parsed.data.title, "pdf")
 
     return NextResponse.json({ token, filename })
   } catch (err) {

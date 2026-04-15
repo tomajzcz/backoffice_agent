@@ -6,6 +6,7 @@ import { selectTools } from "@/lib/agent/tool-selector"
 import { getSystemPrompt } from "@/lib/agent/prompts"
 import { logAgentRun } from "@/lib/agent/run-logger"
 import { buildExplainability } from "@/lib/agent/explainability"
+import { rateLimit } from "@/lib/security/ratelimit"
 import type { ToolCallLog } from "@/types/agent"
 
 // Critical: without this, Vercel cuts streaming at 10s
@@ -115,6 +116,9 @@ function trimMessageHistory(messages: any[]): any[] {
 }
 
 export async function POST(req: NextRequest) {
+  const rl = rateLimit(req, { key: "chat", limit: 10, windowMs: 60_000 })
+  if (!rl.ok) return rl.response
+
   const { messages, sessionId } = await req.json()
 
   const trimmedMessages = trimMessageHistory(messages)

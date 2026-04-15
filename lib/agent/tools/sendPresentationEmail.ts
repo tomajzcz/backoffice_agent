@@ -1,12 +1,13 @@
 import { tool } from "ai"
 import { z } from "zod"
-import { sendEmailWithAttachment } from "@/lib/google/gmail"
+import { saveDraftWithAttachment } from "@/lib/google/gmail"
 import { getPptx } from "@/lib/export/pptx-store"
 import type { SendPresentationEmailResult } from "@/types/agent"
 
 export const sendPresentationEmailTool = tool({
   description:
-    "Odešle vygenerovanou PPTX prezentaci jako přílohu emailu. " +
+    "Uloží vygenerovanou PPTX prezentaci jako Gmail DRAFT s přílohou (neodesílá automaticky). " +
+    "Pepa draft zkontroluje a odešle ručně z Gmailu. " +
     "Vyžaduje pptxToken z předchozího generatePresentation výsledku — " +
     "extrahuj ho z downloadUrl query parametru 'token'. " +
     "Pokud prezentace ještě nebyla vygenerována, nejdříve ji vygeneruj přes generatePresentation.",
@@ -43,7 +44,7 @@ export const sendPresentationEmailTool = tool({
       }
     }
 
-    const result = await sendEmailWithAttachment(to, subject, body, {
+    const result = await saveDraftWithAttachment(to, subject, body, {
       filename: `${filename}.pptx`,
       mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
       content: buffer,
@@ -51,7 +52,7 @@ export const sendPresentationEmailTool = tool({
 
     return {
       toolName: "sendPresentationEmail",
-      messageId: result.messageId,
+      messageId: result.draftId,
       to,
       subject,
       title: filename,

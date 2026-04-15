@@ -198,7 +198,6 @@ export function SpravaClient({ initialProperties }: Props) {
   })
 
   const currentState = tabStates[activeTab]
-  const totalPages = Math.ceil(currentState.total / PAGE_SIZE)
 
   // ─── Data fetching ──────────────────────────────────────────────────────────
 

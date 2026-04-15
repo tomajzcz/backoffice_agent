@@ -30,8 +30,37 @@ import {
 } from "@/lib/db/queries/call-logs"
 import { initiateOutboundCall } from "@/lib/integrations/elevenlabs"
 import { normalizePhoneE164 } from "@/lib/utils/phone"
+import { z } from "zod"
+import { Id, parseOrError } from "@/lib/schemas/entities"
 
 type ActionResult = { success: true; data?: unknown } | { success: false; error: string }
+
+function validateId(id: unknown): { ok: true; id: number } | { ok: false; error: string } {
+  const parsed = Id.safeParse(id)
+  if (!parsed.success) return { ok: false, error: "Neplatné ID" }
+  return { ok: true, id: parsed.data }
+}
+
+const CreateJobSchema = z.object({
+  name: z.string().min(1).max(200),
+  description: z.string().max(2000).optional(),
+  cronExpr: z.string().min(1).max(200),
+  notifyEmail: z.string().email().max(320).optional(),
+  configJson: z.unknown(),
+})
+const UpdateJobSchema = z.object({
+  name: z.string().min(1).max(200).optional(),
+  description: z.string().max(2000).optional(),
+  cronExpr: z.string().min(1).max(200).optional(),
+  notifyEmail: z.string().email().max(320).nullable().optional(),
+  configJson: z.unknown().optional(),
+  status: z.string().max(50).optional(),
+})
+const AutomationConfigSchema = z.object({
+  isActive: z.boolean(),
+  cronExpr: z.string().min(1).max(200),
+  recipientEmail: z.string().email().max(320),
+})
 
 export interface CallLogRow {
   id: number
@@ -62,65 +91,64 @@ export async function listJobsAction() {
   }))
 }
 
-export async function createJobAction(data: {
-  name: string
-  description?: string
-  cronExpr: string
-  notifyEmail?: string
-  configJson: JobConfig
-}): Promise<ActionResult> {
+export async function createJobAction(data: unknown): Promise<ActionResult> {
+  const v = parseOrError(CreateJobSchema, data)
+  if (!v.ok) return { success: false, error: v.error }
   try {
-    const job = await createScheduledJob(data)
+    const job = await createScheduledJob(v.data as Parameters<typeof createScheduledJob>[0])
     revalidatePath("/dashboard")
     return { success: true, data: { id: job.id } }
   } catch (e) {
-    return { success: false, error: e instanceof Error ? e.message : "Chyba při vytváření" }
+    console.error("[createJob]", e)
+    return { success: false, error: "Chyba při vytváření" }
   }
 }
 
-export async function updateJobAction(id: number, data: {
-  name?: string
-  description?: string
-  cronExpr?: string
-  notifyEmail?: string | null
-  configJson?: JobConfig
-  status?: string
-}): Promise<ActionResult> {
+export async function updateJobAction(id: number, data: unknown): Promise<ActionResult> {
+  const idv = validateId(id); if (!idv.ok) return { success: false, error: idv.error }
+  const v = parseOrError(UpdateJobSchema, data)
+  if (!v.ok) return { success: false, error: v.error }
   try {
-    await updateScheduledJob(id, data)
+    await updateScheduledJob(idv.id, v.data as Parameters<typeof updateScheduledJob>[1])
     revalidatePath("/dashboard")
     return { success: true }
   } catch (e) {
-    return { success: false, error: e instanceof Error ? e.message : "Chyba při aktualizaci" }
+    console.error("[updateJob]", e)
+    return { success: false, error: "Chyba při aktualizaci" }
   }
 }
 
 export async function deleteJobAction(id: number): Promise<ActionResult> {
+  const idv = validateId(id); if (!idv.ok) return { success: false, error: idv.error }
   try {
-    await deleteScheduledJob(id)
+    await deleteScheduledJob(idv.id)
     revalidatePath("/dashboard")
     return { success: true }
   } catch (e) {
-    return { success: false, error: e instanceof Error ? e.message : "Chyba při mazání" }
+    console.error("[deleteJob]", e)
+    return { success: false, error: "Chyba při mazání" }
   }
 }
 
 export async function toggleJobStatusAction(id: number): Promise<ActionResult> {
+  const idv = validateId(id); if (!idv.ok) return { success: false, error: idv.error }
   try {
-    const job = await getScheduledJobById(id)
+    const job = await getScheduledJobById(idv.id)
     if (!job) return { success: false, error: "Job nenalezen" }
     const newStatus = job.status === "ACTIVE" ? "PAUSED" : "ACTIVE"
-    await updateScheduledJob(id, { status: newStatus })
+    await updateScheduledJob(idv.id, { status: newStatus })
     revalidatePath("/dashboard")
     return { success: true }
   } catch (e) {
-    return { success: false, error: e instanceof Error ? e.message : "Chyba" }
+    console.error("[toggleJobStatus]", e)
+    return { success: false, error: "Chyba při přepínání stavu" }
   }
 }
 
 export async function runJobNowAction(id: number): Promise<ActionResult & { newCount?: number }> {
+  const idv = validateId(id); if (!idv.ok) return { success: false, error: idv.error }
   try {
-    const job = await getScheduledJobById(id)
+    const job = await getScheduledJobById(idv.id)
     if (!job) return { success: false, error: "Job nenalezen" }
 
     const config = job.configJson as unknown as JobConfig
@@ -154,7 +182,8 @@ export async function runJobNowAction(id: number): Promise<ActionResult & { newC
       data: { scraped: allListings.length, new: newListings.length },
     }
   } catch (e) {
-    return { success: false, error: e instanceof Error ? e.message : "Chyba při spouštění" }
+    console.error("[runJobNow]", e)
+    return { success: false, error: "Chyba při spouštění" }
   }
 }
 
@@ -302,7 +331,8 @@ export async function triggerReminderCallsAction(): Promise<ActionResult> {
       },
     }
   } catch (e) {
-    return { success: false, error: e instanceof Error ? e.message : "Chyba při spouštění hovorů" }
+    console.error("[triggerReminderCalls]", e)
+    return { success: false, error: "Chyba při spouštění hovorů" }
   }
 }
 
@@ -370,7 +400,8 @@ export async function toggleAutomationConfigAction(
     revalidatePath("/dashboard")
     return { success: true }
   } catch (e) {
-    return { success: false, error: e instanceof Error ? e.message : "Chyba" }
+    console.error("[toggleAutomationConfig]", e)
+    return { success: false, error: "Chyba při přepínání konfigurace" }
   }
 }
 
@@ -378,25 +409,36 @@ export async function updateAutomationEmailAction(
   key: string,
   email: string,
 ): Promise<ActionResult> {
+  const keyParsed = z.string().min(1).max(100).safeParse(key)
+  const emailParsed = z.string().email().max(320).safeParse(email)
+  if (!keyParsed.success || !emailParsed.success) {
+    return { success: false, error: "Neplatné údaje" }
+  }
   try {
-    await upsertAutomationConfig(key, { recipientEmail: email })
+    await upsertAutomationConfig(keyParsed.data, { recipientEmail: emailParsed.data })
     revalidatePath("/dashboard")
     return { success: true }
   } catch (e) {
-    return { success: false, error: e instanceof Error ? e.message : "Chyba" }
+    console.error("[updateAutomationEmail]", e)
+    return { success: false, error: "Chyba při ukládání emailu" }
   }
 }
 
 export async function updateAutomationConfigAction(
   key: string,
-  data: { isActive: boolean; cronExpr: string; recipientEmail: string },
+  data: unknown,
 ): Promise<ActionResult> {
+  const keyParsed = z.string().min(1).max(100).safeParse(key)
+  if (!keyParsed.success) return { success: false, error: "Neplatný klíč" }
+  const v = parseOrError(AutomationConfigSchema, data)
+  if (!v.ok) return { success: false, error: v.error }
   try {
-    await upsertAutomationConfig(key, data)
+    await upsertAutomationConfig(keyParsed.data, v.data)
     revalidatePath("/dashboard")
     return { success: true }
   } catch (e) {
-    return { success: false, error: e instanceof Error ? e.message : "Chyba při ukládání" }
+    console.error("[updateAutomationConfig]", e)
+    return { success: false, error: "Chyba při ukládání" }
   }
 }
 
@@ -423,6 +465,7 @@ export async function triggerExecutiveReportAction(): Promise<ActionResult> {
     }
     return { success: false, error: result.error ?? "Neznámá chyba" }
   } catch (e) {
-    return { success: false, error: e instanceof Error ? e.message : "Chyba při generování reportu" }
+    console.error("[triggerExecutiveReport]", e)
+    return { success: false, error: "Chyba při generování reportu" }
   }
 }

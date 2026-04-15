@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getPptx } from "@/lib/export/pptx-store"
-import { sendEmailWithAttachment } from "@/lib/google/gmail"
+import { saveDraftWithAttachment } from "@/lib/google/gmail"
+import { rateLimit } from "@/lib/security/ratelimit"
 
 export async function POST(req: NextRequest) {
+  const rl = rateLimit(req, { key: "pptx-send", limit: 10, windowMs: 60_000 })
+  if (!rl.ok) return rl.response
+
   try {
     const { to, token, filename = "prezentace" } = await req.json()
 
@@ -18,7 +22,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const result = await sendEmailWithAttachment(
+    const result = await saveDraftWithAttachment(
       to,
       `Prezentace: ${filename}`,
       `<p>Dobrý den,</p><p>v příloze najdete prezentaci <strong>${filename}</strong>.</p><p>S pozdravem,<br>Back Office Agent</p>`,
@@ -29,10 +33,12 @@ export async function POST(req: NextRequest) {
       },
     )
 
-    return NextResponse.json({ success: true, messageId: result.messageId })
+    return NextResponse.json({ success: true, draftId: result.draftId })
   } catch (err) {
     console.error("[pptx/send-email] POST error:", err)
-    const message = err instanceof Error ? err.message : "Nepodařilo se odeslat email"
-    return NextResponse.json({ error: message }, { status: 500 })
+    return NextResponse.json(
+      { error: "Nepodařilo se uložit draft prezentace" },
+      { status: 500 },
+    )
   }
 }

@@ -64,7 +64,7 @@ Handles both AI SDK v4's `toolInvocations` format and legacy `content` array wit
 | Area | Path |
 |------|------|
 | Chat streaming endpoint | `app/api/chat/route.ts` |
-| Tool definitions (35 tools) | `lib/agent/tools/` (each tool = own file, re-exported from `index.ts`) |
+| Tool definitions (45 tools) | `lib/agent/tools/` (each tool = own file, re-exported from `index.ts`) |
 | Tool selector (keyword routing) | `lib/agent/tool-selector.ts` |
 | System prompt (Czech) | `lib/agent/prompts.ts` |
 | DB schema | `prisma/schema.prisma` |
@@ -95,14 +95,19 @@ Handles both AI SDK v4's `toolInvocations` format and legacy `content` array wit
 7. Update system prompt in `lib/agent/prompts.ts` if agent needs guidance on when/how to use the tool
 8. If result contains large arrays, ensure trimming in `trimToolResult()` handles them
 
-## Tool Categories (35 total)
+## Tool Categories (45 total)
 
-- **Analytics** (5): queryNewClients, queryLeadsSalesTimeline, queryWeeklyKPIs, scanMissingRenovationData, generateReport
+- **Analytics / queries** (5): queryNewClients, queryLeadsSalesTimeline, queryWeeklyKPIs, queryActiveRenovations, queryPropertiesByLifecycle
+- **Health & data-quality scans** (5): scanOperationalHealth, scanRenovationHealth, scanOverdueTasks, scanMissingRenovationData, scanMissingDocuments
+- **Investor / profitability** (2): getInvestorOverview, calculatePropertyProfitability
+- **Property detail** (3): getPropertyDetails, getPropertyDocuments, getRenovationDetail
 - **Google** (6): getCalendarAvailability, createCalendarEvent, updateCalendarEvent, deleteCalendarEvent, listCalendarEvents, createGmailDraft
-- **Export** (2): generatePresentation (PPTX, 1–10 slides from pool of 10), sendPresentationEmail
-- **Monitoring** (4): listScheduledJobs, createMonitoringJob, triggerMonitoringJob, getMonitoringResults
-- **CRUD** (16): list/create/update for Properties, Clients, Leads, Deals, Showings
-- **Other** (2): createAgentTask, getPropertyDetails
+- **Export & reporting** (3): generateReport, generatePresentation (PPTX, 1–10 slides from pool of 10), sendPresentationEmail
+- **Monitoring** (5): listScheduledJobs, createMonitoringJob, triggerMonitoringJob, getMonitoringResults, analyzeNewListings
+- **CRUD** (15): list/create/update for Properties, Clients, Leads, Deals, Showings (no delete)
+- **Other** (1): createAgentTask
+
+When this list drifts from `lib/agent/tools/`, the directory is the source of truth.
 
 ## Integrations
 
@@ -156,8 +161,15 @@ N8N_WEBHOOK_SECRET=     # Optional
 TWILIO_ACCOUNT_SID=
 TWILIO_AUTH_TOKEN=
 TWILIO_PHONE_NUMBER=    # E.164 format (e.g., +420...)
+CRON_SECRET=            # Required by /api/cron/* (Vercel-injected as Authorization header)
 ```
+
+Cron schedules live in `vercel.json`, not in code.
 
 ## Deployment
 
 Vercel auto-deploys from `main` branch. DB on Neon. TypeScript strict mode. Node 20 LTS.
+
+`tsconfig.json` excludes `prisma/seed.ts` and `scripts/` from typechecking — those run via `tsx` and are not built.
+
+No test runner is configured. There is no `npm test` and no test files in the repo; verify changes via `npm run lint`, `npm run build`, and manual checks against the dev server.

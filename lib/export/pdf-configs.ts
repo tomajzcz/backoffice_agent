@@ -3,7 +3,6 @@
  * Reuses CSV configs where available, adds standalone configs for remaining tools.
  */
 import { getCSVConfig, type CSVExportConfig } from "./csv-configs"
-import type { AgentToolResult } from "@/types/agent"
 
 export interface PDFTableConfig extends CSVExportConfig {
   title: string

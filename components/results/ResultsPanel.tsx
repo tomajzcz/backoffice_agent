@@ -129,15 +129,6 @@ export function ResultsPanel({ messages, latestToolResult, latestExplainability,
     }
   }, [latestToolResult])
 
-  // Switch to "odpoved" when a new assistant text appears with no tool result
-  const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant")
-  const hasAnswer = !!lastAssistant && (
-    typeof lastAssistant.content === "string"
-      ? lastAssistant.content.length > 0
-      : Array.isArray(lastAssistant.content) &&
-        (lastAssistant.content as unknown as { type: string; text?: string }[]).some((p) => p.type === "text" && p.text)
-  )
-
   return (
     <div className="flex flex-col h-full bg-background/40">
       {/* Header */}
